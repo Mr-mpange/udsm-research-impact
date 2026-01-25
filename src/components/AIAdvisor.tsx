@@ -1,7 +1,8 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Send, Bot, User, Sparkles, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
 
 interface Message {
   id: string;
@@ -17,89 +18,103 @@ const suggestedQuestions = [
   "Which authors have the highest h-index growth?"
 ];
 
-// Simulated AI responses
-const getAIResponse = (question: string): string => {
-  const responses: Record<string, string> = {
-    "Which UDSM papers influence Europe most?": `Based on our analysis, the most influential UDSM papers in Europe are:
+const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/research-advisor`;
 
-1. **"Climate Change Impact on African Agriculture"** - 8,920 citations from UK, Germany, and Netherlands
-2. **"Sustainable Water Management in Tanzania"** - High engagement from Nordic countries
-3. **"Renewable Energy Systems for East Africa"** - Strong collaboration with German institutions
+type Msg = { role: "user" | "assistant"; content: string };
 
-The UK and Germany show the highest readership, with Oxford and Max Planck being key institutional partners.`,
-    
-    "Which topics should we invest in for 2027 impact?": `Our predictive analytics suggest focusing on:
+async function streamChat({
+  messages,
+  onDelta,
+  onDone,
+  onError,
+}: {
+  messages: Msg[];
+  onDelta: (deltaText: string) => void;
+  onDone: () => void;
+  onError: (error: Error) => void;
+}) {
+  try {
+    const resp = await fetch(CHAT_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+      },
+      body: JSON.stringify({ messages }),
+    });
 
-🔹 **AI in Healthcare** (45% growth rate, 89% confidence)
-   - Aligns with WHO priorities and Gates Foundation interests
-   
-🔹 **Climate Adaptation** (38% growth, 92% confidence)
-   - Strong EU funding opportunities expected
-   
-🔹 **Digital Agriculture** (32% growth, 84% confidence)
-   - Africa's emerging tech sector is driving demand
+    if (resp.status === 429) {
+      onError(new Error("Rate limit exceeded. Please try again later."));
+      return;
+    }
 
-Strategic recommendation: Increase collaboration with Asian tech institutions (NUS Singapore, IIT Delhi) for maximum impact.`,
-    
-    "Suggest new collaboration targets in Asia.": `Based on AI similarity scoring, recommended Asian partners:
+    if (resp.status === 402) {
+      onError(new Error("AI credits exhausted. Please add credits to continue."));
+      return;
+    }
 
-1. **NUS Singapore** (92% match)
-   - Strong Health Sciences alignment
-   - Existing Southeast Asian network
-   
-2. **University of Tokyo** (85% match)
-   - Marine Biology synergies
-   - Potential for joint PhD programs
-   
-3. **Tsinghua University** (88% match)
-   - Engineering collaboration opportunities
-   - Access to Chinese research funding
+    if (!resp.ok || !resp.body) {
+      onError(new Error("Failed to start stream"));
+      return;
+    }
 
-Action: Initiate MoU discussions with NUS Singapore as priority.`,
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let textBuffer = "";
+    let streamDone = false;
 
-    "What's our current Q1 publication trend?": `Q1 publication analysis:
+    while (!streamDone) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      textBuffer += decoder.decode(value, { stream: true });
 
-📊 **Current Distribution:**
-- Q1: 423 papers (28%)
-- Q2: 567 papers (37%)
-- Q3: 389 papers (25%)
-- Q4: 156 papers (10%)
+      let newlineIndex: number;
+      while ((newlineIndex = textBuffer.indexOf("\n")) !== -1) {
+        let line = textBuffer.slice(0, newlineIndex);
+        textBuffer = textBuffer.slice(newlineIndex + 1);
 
-📈 **Trend:** Q1 publications have grown 15.6% YoY
+        if (line.endsWith("\r")) line = line.slice(0, -1);
+        if (line.startsWith(":") || line.trim() === "") continue;
+        if (!line.startsWith("data: ")) continue;
 
-**Top Q1 Journals:**
-1. Lancet Global Health
-2. Nature Communications
-3. Environmental Science & Technology
+        const jsonStr = line.slice(6).trim();
+        if (jsonStr === "[DONE]") {
+          streamDone = true;
+          break;
+        }
 
-Recommendation: Focus on converting Q2 papers to Q1 through targeted journal selection.`,
+        try {
+          const parsed = JSON.parse(jsonStr);
+          const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+          if (content) onDelta(content);
+        } catch {
+          textBuffer = line + "\n" + textBuffer;
+          break;
+        }
+      }
+    }
 
-    "Which authors have the highest h-index growth?": `Top performers by h-index growth (2023-2024):
+    if (textBuffer.trim()) {
+      for (let raw of textBuffer.split("\n")) {
+        if (!raw) continue;
+        if (raw.endsWith("\r")) raw = raw.slice(0, -1);
+        if (raw.startsWith(":") || raw.trim() === "") continue;
+        if (!raw.startsWith("data: ")) continue;
+        const jsonStr = raw.slice(6).trim();
+        if (jsonStr === "[DONE]") continue;
+        try {
+          const parsed = JSON.parse(jsonStr);
+          const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+          if (content) onDelta(content);
+        } catch { /* ignore partial leftovers */ }
+      }
+    }
 
-1. **Prof. Amani Mwangi** (Engineering)
-   - h-index: 34 (+4)
-   - Recent breakthrough in renewable energy systems
-   
-2. **Prof. Joseph Kimathi** (Natural Sciences)
-   - h-index: 31 (+3)
-   - Climate research gaining traction
-   
-3. **Dr. Fatima Hassan** (Medicine)
-   - h-index: 28 (+5)
-   - Highest growth rate, malaria research
-
-These researchers are driving 40% of our citation growth.`
-  };
-
-  return responses[question] || `I've analyzed the query "${question}" against our research database.
-
-Based on current UDSM research metrics:
-- Total Citations: 156,789
-- Active Collaborations: 892
-- Global Impact Index: 78.4
-
-For more specific insights, please try one of the suggested questions or refine your query.`;
-};
+    onDone();
+  } catch (error) {
+    onError(error instanceof Error ? error : new Error("Unknown error"));
+  }
+}
 
 export default function AIAdvisor() {
   const [isOpen, setIsOpen] = useState(false);
@@ -107,12 +122,13 @@ export default function AIAdvisor() {
     {
       id: '1',
       role: 'assistant',
-      content: "Hello! I'm the UDSM Research Intelligence Advisor. I can help you analyze research impact, identify collaboration opportunities, and provide strategic insights. What would you like to know?"
+      content: "Hello! I'm the UDSM Research Intelligence Advisor powered by AI. I can help you analyze research impact, identify collaboration opportunities, and provide strategic insights. What would you like to know?"
     }
   ]);
   const [input, setInput] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -122,8 +138,8 @@ export default function AIAdvisor() {
     scrollToBottom();
   }, [messages]);
 
-  const handleSend = async (text: string = input) => {
-    if (!text.trim()) return;
+  const handleSend = useCallback(async (text: string = input) => {
+    if (!text.trim() || isLoading) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -133,26 +149,43 @@ export default function AIAdvisor() {
 
     setMessages(prev => [...prev, userMessage]);
     setInput('');
-    setIsTyping(true);
+    setIsLoading(true);
 
-    // Simulate AI response delay
-    setTimeout(() => {
-      const response = getAIResponse(text);
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: response
-      };
-      setMessages(prev => [...prev, assistantMessage]);
-      setIsTyping(false);
-    }, 1500);
-  };
+    let assistantSoFar = "";
+    
+    const upsertAssistant = (nextChunk: string) => {
+      assistantSoFar += nextChunk;
+      setMessages(prev => {
+        const last = prev[prev.length - 1];
+        if (last?.role === "assistant" && last.id.startsWith("stream-")) {
+          return prev.map((m, i) => (i === prev.length - 1 ? { ...m, content: assistantSoFar } : m));
+        }
+        return [...prev, { id: `stream-${Date.now()}`, role: "assistant", content: assistantSoFar }];
+      });
+    };
+
+    const allMessages = [...messages, userMessage].map(m => ({ role: m.role, content: m.content }));
+
+    await streamChat({
+      messages: allMessages,
+      onDelta: (chunk) => upsertAssistant(chunk),
+      onDone: () => setIsLoading(false),
+      onError: (error) => {
+        setIsLoading(false);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: error.message || "Failed to get AI response",
+        });
+      },
+    });
+  }, [input, isLoading, messages, toast]);
 
   return (
     <>
       {/* Floating Button */}
       <motion.button
-        className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-gradient-to-br from-primary to-cyan text-white shadow-lg flex items-center justify-center hover:scale-110 transition-transform"
+        className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-gradient-to-br from-primary to-cyan text-primary-foreground shadow-lg flex items-center justify-center hover:scale-110 transition-transform"
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.95 }}
         onClick={() => setIsOpen(true)}
@@ -176,14 +209,14 @@ export default function AIAdvisor() {
             <div className="p-4 border-b border-border flex items-center justify-between bg-gradient-to-r from-primary/10 to-cyan/10">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-cyan flex items-center justify-center">
-                  <Sparkles className="w-5 h-5 text-white" />
+                  <Sparkles className="w-5 h-5 text-primary-foreground" />
                 </div>
                 <div>
                   <h3 className="font-display font-semibold text-foreground">
                     AI Research Advisor
                   </h3>
                   <p className="text-xs text-muted-foreground">
-                    Powered by UDSM Intelligence
+                    Powered by Lovable AI
                   </p>
                 </div>
               </div>
@@ -222,7 +255,7 @@ export default function AIAdvisor() {
                 </motion.div>
               ))}
               
-              {isTyping && (
+              {isLoading && messages[messages.length - 1]?.role !== 'assistant' && (
                 <motion.div
                   className="flex gap-3"
                   initial={{ opacity: 0 }}
@@ -252,7 +285,8 @@ export default function AIAdvisor() {
                     <button
                       key={q}
                       onClick={() => handleSend(q)}
-                      className="text-xs px-3 py-1.5 rounded-full bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground transition-colors"
+                      disabled={isLoading}
+                      className="text-xs px-3 py-1.5 rounded-full bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
                     >
                       {q.length > 35 ? q.substring(0, 35) + '...' : q}
                     </button>
@@ -270,11 +304,12 @@ export default function AIAdvisor() {
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSend()}
                   placeholder="Ask about research impact..."
-                  className="flex-1 px-4 py-2 rounded-xl bg-muted border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  disabled={isLoading}
+                  className="flex-1 px-4 py-2 rounded-xl bg-muted border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50"
                 />
                 <Button
                   onClick={() => handleSend()}
-                  disabled={!input.trim() || isTyping}
+                  disabled={!input.trim() || isLoading}
                   className="rounded-xl bg-gradient-to-r from-primary to-cyan hover:opacity-90"
                 >
                   <Send className="w-4 h-4" />

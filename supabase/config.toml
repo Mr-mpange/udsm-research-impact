@@ -1,0 +1,4 @@
+project_id = "jyxoltkvmtyfbfysbknb"
+
+[functions.research-advisor]
+verify_jwt = false
