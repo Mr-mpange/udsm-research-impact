@@ -7,11 +7,17 @@ import AnalyticsCharts from '@/components/AnalyticsCharts';
 import CollaborationNetwork from '@/components/CollaborationNetwork';
 import PredictiveAnalytics from '@/components/PredictiveAnalytics';
 import AIAdvisor from '@/components/AIAdvisor';
+import AuthModal from '@/components/auth/AuthModal';
+import ResearcherProfile from '@/components/profile/ResearcherProfile';
+import DataExport from '@/components/export/DataExport';
 import { countryMetrics } from '@/data/researchData';
 import { MapPin, TrendingUp, Users, BookOpen } from 'lucide-react';
 
 export default function Index() {
   const [activeTab, setActiveTab] = useState('globe');
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
+  const [showExport, setShowExport] = useState(false);
 
   const totalReads = countryMetrics.reduce((acc, c) => acc + c.reads, 0);
   const totalCitations = countryMetrics.reduce((acc, c) => acc + c.citations, 0);
@@ -24,7 +30,13 @@ export default function Index() {
         <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-secondary/5 rounded-full blur-[100px]" />
       </div>
 
-      <Header activeTab={activeTab} setActiveTab={setActiveTab} />
+      <Header 
+        activeTab={activeTab} 
+        setActiveTab={setActiveTab}
+        onOpenAuth={() => setShowAuthModal(true)}
+        onOpenProfile={() => setShowProfile(true)}
+        onOpenExport={() => setShowExport(true)}
+      />
 
       <main className="relative pt-28 pb-12">
         <div className="container mx-auto px-4">
@@ -244,6 +256,11 @@ export default function Index() {
 
       {/* AI Advisor */}
       <AIAdvisor />
+
+      {/* Modals */}
+      <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
+      <ResearcherProfile isOpen={showProfile} onClose={() => setShowProfile(false)} />
+      <DataExport isOpen={showExport} onClose={() => setShowExport(false)} />
     </div>
   );
 }

@@ -1,11 +1,16 @@
 import { motion } from 'framer-motion';
-import { Globe, BarChart3, Network, Brain, Settings, Menu } from 'lucide-react';
+import { Globe, BarChart3, Network, Brain, Settings, Menu, LogIn, Download } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/hooks/useAuth';
+import UserMenu from '@/components/auth/UserMenu';
 
 interface HeaderProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
+  onOpenAuth: () => void;
+  onOpenProfile: () => void;
+  onOpenExport: () => void;
 }
 
 const navItems = [
@@ -15,9 +20,9 @@ const navItems = [
   { id: 'predictions', label: 'Predictions', icon: Brain },
 ];
 
-export default function Header({ activeTab, setActiveTab }: HeaderProps) {
+export default function Header({ activeTab, setActiveTab, onOpenAuth, onOpenProfile, onOpenExport }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
+  const { user } = useAuth();
   return (
     <header className="fixed top-0 left-0 right-0 z-50">
       <div className="glass-panel m-4 px-6 py-4">
@@ -74,10 +79,32 @@ export default function Header({ activeTab, setActiveTab }: HeaderProps) {
               <span className="text-xs text-emerald font-medium">Live Data</span>
             </motion.div>
             
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="hidden md:flex"
+              onClick={onOpenExport}
+              title="Export Data"
+            >
+              <Download className="w-4 h-4" />
+            </Button>
+            
             <Button variant="ghost" size="icon" className="hidden md:flex">
               <Settings className="w-4 h-4" />
             </Button>
 
+            {user ? (
+              <UserMenu onOpenProfile={onOpenProfile} />
+            ) : (
+              <Button 
+                onClick={onOpenAuth}
+                className="hidden md:flex bg-gradient-to-r from-primary to-cyan hover:opacity-90"
+                size="sm"
+              >
+                <LogIn className="w-4 h-4 mr-2" />
+                Sign In
+              </Button>
+            )}
             {/* Mobile Menu Button */}
             <Button 
               variant="ghost" 
