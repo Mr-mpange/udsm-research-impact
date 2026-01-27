@@ -10,14 +10,29 @@ import AIAdvisor from '@/components/AIAdvisor';
 import AuthModal from '@/components/auth/AuthModal';
 import ResearcherProfile from '@/components/profile/ResearcherProfile';
 import DataExport from '@/components/export/DataExport';
+import SavedDashboardsPanel from '@/components/dashboard/SavedDashboardsPanel';
 import { countryMetrics } from '@/data/researchData';
 import { MapPin, TrendingUp, Users, BookOpen } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { useSavedDashboards, type DashboardConfig } from '@/hooks/useSavedDashboards';
 
 export default function Index() {
   const [activeTab, setActiveTab] = useState('globe');
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [showExport, setShowExport] = useState(false);
+  const { user } = useAuth();
+  const { dashboards, isLoading: dashboardsLoading, saveDashboard, deleteDashboard } = useSavedDashboards();
+
+  const handleLoadDashboard = (config: DashboardConfig) => {
+    if (config.activeTab) {
+      setActiveTab(config.activeTab);
+    }
+  };
+
+  const handleSaveDashboard = async (name: string, config: DashboardConfig) => {
+    await saveDashboard(name, { ...config, activeTab });
+  };
 
   const totalReads = countryMetrics.reduce((acc, c) => acc + c.reads, 0);
   const totalCitations = countryMetrics.reduce((acc, c) => acc + c.citations, 0);
@@ -181,6 +196,19 @@ export default function Index() {
                     Comprehensive metrics and performance insights
                   </p>
                 </div>
+                
+                {/* Saved Dashboards Panel for logged-in users */}
+                {user && (
+                  <SavedDashboardsPanel
+                    dashboards={dashboards}
+                    currentConfig={{ activeTab }}
+                    onLoadDashboard={handleLoadDashboard}
+                    onSaveDashboard={handleSaveDashboard}
+                    onDeleteDashboard={deleteDashboard}
+                    isLoading={dashboardsLoading}
+                  />
+                )}
+                
                 <KPIMetrics />
                 <AnalyticsCharts />
               </motion.div>

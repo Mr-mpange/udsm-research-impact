@@ -1,8 +1,10 @@
 import { motion } from 'framer-motion';
-import { Globe, BarChart3, Network, Brain, Settings, Menu, LogIn, Download } from 'lucide-react';
+import { Globe, BarChart3, Network, Brain, Settings, Menu, LogIn, Download, Shield } from 'lucide-react';
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
+import { useUserRole } from '@/hooks/useUserRole';
 import UserMenu from '@/components/auth/UserMenu';
 
 interface HeaderProps {
@@ -23,6 +25,8 @@ const navItems = [
 export default function Header({ activeTab, setActiveTab, onOpenAuth, onOpenProfile, onOpenExport }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user } = useAuth();
+  const { isAdmin } = useUserRole();
+  const navigate = useNavigate();
   return (
     <header className="fixed top-0 left-0 right-0 z-50">
       <div className="glass-panel m-4 px-6 py-4">
@@ -92,6 +96,18 @@ export default function Header({ activeTab, setActiveTab, onOpenAuth, onOpenProf
             <Button variant="ghost" size="icon" className="hidden md:flex">
               <Settings className="w-4 h-4" />
             </Button>
+
+            {isAdmin && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="hidden md:flex gap-2"
+                onClick={() => navigate('/admin')}
+              >
+                <Shield className="w-4 h-4" />
+                Admin
+              </Button>
+            )}
 
             {user ? (
               <UserMenu onOpenProfile={onOpenProfile} />

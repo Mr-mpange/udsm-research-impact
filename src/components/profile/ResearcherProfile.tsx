@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   X, Award, BookOpen, Users, TrendingUp, Building2, 
-  ExternalLink, Edit2, Save, Loader2 
+  ExternalLink, Edit2, Save, Loader2, Link2 
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,6 +12,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import PublicationTimeline from './PublicationTimeline';
 import CollaborationMap from './CollaborationMap';
 import HIndexChart from './HIndexChart';
+import OrcidSync from './OrcidSync';
 
 interface ResearcherProfileProps {
   isOpen: boolean;
@@ -23,7 +24,7 @@ export default function ResearcherProfile({ isOpen, onClose }: ResearcherProfile
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<'overview' | 'publications' | 'collaborations'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'publications' | 'collaborations' | 'orcid'>('overview');
   
   const [formData, setFormData] = useState({
     display_name: '',
@@ -65,6 +66,11 @@ export default function ResearcherProfile({ isOpen, onClose }: ResearcherProfile
     }
   };
 
+  const handleOrcidSyncComplete = () => {
+    // Refresh profile to get updated publication count
+    window.location.reload();
+  };
+
   if (!isOpen || !profile) return null;
 
   const initials = profile.display_name
@@ -78,6 +84,7 @@ export default function ResearcherProfile({ isOpen, onClose }: ResearcherProfile
     { id: 'overview', label: 'Overview' },
     { id: 'publications', label: 'Publications' },
     { id: 'collaborations', label: 'Collaborations' },
+    { id: 'orcid', label: 'ORCID Sync', icon: Link2 },
   ] as const;
 
   return (
@@ -273,6 +280,12 @@ export default function ResearcherProfile({ isOpen, onClose }: ResearcherProfile
 
           {activeTab === 'publications' && <PublicationTimeline />}
           {activeTab === 'collaborations' && <CollaborationMap />}
+          {activeTab === 'orcid' && (
+            <OrcidSync 
+              currentOrcidId={profile.orcid_id} 
+              onSyncComplete={handleOrcidSyncComplete} 
+            />
+          )}
         </div>
       </motion.div>
     </>
