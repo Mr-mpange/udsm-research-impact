@@ -2,3 +2,6 @@ project_id = "jyxoltkvmtyfbfysbknb"
 
 [functions.research-advisor]
 verify_jwt = false
+
+[functions.orcid-sync]
+verify_jwt = false

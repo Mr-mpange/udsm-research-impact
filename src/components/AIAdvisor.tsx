@@ -1,14 +1,11 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Bot, User, Sparkles, X } from 'lucide-react';
+import { Send, Bot, User, Sparkles, X, History, ChevronLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-
-interface Message {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-}
+import { useAuth } from '@/hooks/useAuth';
+import { useChatHistory, type ChatMessage } from '@/hooks/useChatHistory';
+import ChatHistoryPanel from '@/components/chat/ChatHistoryPanel';
 
 const suggestedQuestions = [
   "Which UDSM papers influence Europe most?",
@@ -116,19 +113,42 @@ async function streamChat({
   }
 }
 
+const welcomeMessage: ChatMessage = {
+  id: '1',
+  role: 'assistant',
+  content: "Hello! I'm the UDSM Research Intelligence Advisor powered by AI. I can help you analyze research impact, identify collaboration opportunities, and provide strategic insights. What would you like to know?"
+};
+
 export default function AIAdvisor() {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      role: 'assistant',
-      content: "Hello! I'm the UDSM Research Intelligence Advisor powered by AI. I can help you analyze research impact, identify collaboration opportunities, and provide strategic insights. What would you like to know?"
-    }
-  ]);
+  const [showHistory, setShowHistory] = useState(false);
+  const [messages, setMessages] = useState<ChatMessage[]>([welcomeMessage]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+  const { user } = useAuth();
+  
+  const {
+    conversations,
+    currentConversationId,
+    setCurrentConversationId,
+    isLoading: historyLoading,
+    createConversation,
+    updateConversation,
+    deleteConversation,
+    getCurrentMessages
+  } = useChatHistory();
+
+  // Load messages when conversation changes
+  useEffect(() => {
+    if (currentConversationId) {
+      const convMessages = getCurrentMessages();
+      if (convMessages.length > 0) {
+        setMessages(convMessages);
+      }
+    }
+  }, [currentConversationId, getCurrentMessages]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -138,18 +158,36 @@ export default function AIAdvisor() {
     scrollToBottom();
   }, [messages]);
 
+  const handleNewConversation = useCallback(() => {
+    setCurrentConversationId(null);
+    setMessages([welcomeMessage]);
+    setShowHistory(false);
+  }, [setCurrentConversationId]);
+
+  const handleSelectConversation = useCallback((id: string) => {
+    setCurrentConversationId(id);
+    setShowHistory(false);
+  }, [setCurrentConversationId]);
+
   const handleSend = useCallback(async (text: string = input) => {
     if (!text.trim() || isLoading) return;
 
-    const userMessage: Message = {
+    const userMessage: ChatMessage = {
       id: Date.now().toString(),
       role: 'user',
       content: text
     };
 
-    setMessages(prev => [...prev, userMessage]);
+    const newMessages = [...messages, userMessage];
+    setMessages(newMessages);
     setInput('');
     setIsLoading(true);
+
+    // Create conversation if user is logged in and no current conversation
+    let convId = currentConversationId;
+    if (user && !convId) {
+      convId = await createConversation(userMessage);
+    }
 
     let assistantSoFar = "";
     
@@ -164,12 +202,22 @@ export default function AIAdvisor() {
       });
     };
 
-    const allMessages = [...messages, userMessage].map(m => ({ role: m.role, content: m.content }));
+    const allMessages = newMessages.map(m => ({ role: m.role, content: m.content }));
 
     await streamChat({
       messages: allMessages,
       onDelta: (chunk) => upsertAssistant(chunk),
-      onDone: () => setIsLoading(false),
+      onDone: async () => {
+        setIsLoading(false);
+        // Save to database if logged in
+        if (user && convId) {
+          const finalMessages: ChatMessage[] = [
+            ...newMessages,
+            { id: `stream-${Date.now()}`, role: 'assistant', content: assistantSoFar }
+          ];
+          await updateConversation(convId, finalMessages);
+        }
+      },
       onError: (error) => {
         setIsLoading(false);
         toast({
@@ -179,7 +227,7 @@ export default function AIAdvisor() {
         });
       },
     });
-  }, [input, isLoading, messages, toast]);
+  }, [input, isLoading, messages, toast, user, currentConversationId, createConversation, updateConversation]);
 
   return (
     <>
@@ -199,7 +247,7 @@ export default function AIAdvisor() {
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            className="fixed bottom-24 right-6 z-50 w-[420px] max-h-[600px] glass-panel overflow-hidden flex flex-col"
+            className="fixed bottom-24 right-6 z-50 w-[480px] max-h-[650px] glass-panel overflow-hidden flex flex-col"
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
@@ -208,114 +256,150 @@ export default function AIAdvisor() {
             {/* Header */}
             <div className="p-4 border-b border-border flex items-center justify-between bg-gradient-to-r from-primary/10 to-cyan/10">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-cyan flex items-center justify-center">
-                  <Sparkles className="w-5 h-5 text-primary-foreground" />
-                </div>
+                {showHistory ? (
+                  <Button variant="ghost" size="icon" onClick={() => setShowHistory(false)}>
+                    <ChevronLeft className="w-5 h-5" />
+                  </Button>
+                ) : (
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-cyan flex items-center justify-center">
+                    <Sparkles className="w-5 h-5 text-primary-foreground" />
+                  </div>
+                )}
                 <div>
                   <h3 className="font-display font-semibold text-foreground">
-                    AI Research Advisor
+                    {showHistory ? 'Chat History' : 'AI Research Advisor'}
                   </h3>
                   <p className="text-xs text-muted-foreground">
-                    Powered by Lovable AI
+                    {showHistory ? `${conversations.length} conversations` : 'Powered by Lovable AI'}
                   </p>
                 </div>
               </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setIsOpen(false)}
-              >
-                <X className="w-4 h-4" />
-              </Button>
-            </div>
-
-            {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin max-h-[380px]">
-              {messages.map((message) => (
-                <motion.div
-                  key={message.id}
-                  className={`flex gap-3 ${message.role === 'user' ? 'flex-row-reverse' : ''}`}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                >
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                    message.role === 'user' 
-                      ? 'bg-secondary/20 text-secondary' 
-                      : 'bg-primary/20 text-primary'
-                  }`}>
-                    {message.role === 'user' ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
-                  </div>
-                  <div className={`max-w-[80%] p-3 rounded-xl ${
-                    message.role === 'user'
-                      ? 'bg-secondary/20 text-foreground'
-                      : 'bg-muted text-foreground'
-                  }`}>
-                    <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-                  </div>
-                </motion.div>
-              ))}
-              
-              {isLoading && messages[messages.length - 1]?.role !== 'assistant' && (
-                <motion.div
-                  className="flex gap-3"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                >
-                  <div className="w-8 h-8 rounded-lg bg-primary/20 text-primary flex items-center justify-center">
-                    <Bot className="w-4 h-4" />
-                  </div>
-                  <div className="bg-muted p-3 rounded-xl">
-                    <div className="flex gap-1">
-                      <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" />
-                      <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce animation-delay-200" />
-                      <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce animation-delay-400" />
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-              <div ref={messagesEndRef} />
-            </div>
-
-            {/* Suggested Questions */}
-            {messages.length <= 2 && (
-              <div className="px-4 pb-2">
-                <p className="text-xs text-muted-foreground mb-2">Suggested questions:</p>
-                <div className="flex flex-wrap gap-2">
-                  {suggestedQuestions.slice(0, 3).map((q) => (
-                    <button
-                      key={q}
-                      onClick={() => handleSend(q)}
-                      disabled={isLoading}
-                      className="text-xs px-3 py-1.5 rounded-full bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
-                    >
-                      {q.length > 35 ? q.substring(0, 35) + '...' : q}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Input */}
-            <div className="p-4 border-t border-border">
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                  placeholder="Ask about research impact..."
-                  disabled={isLoading}
-                  className="flex-1 px-4 py-2 rounded-xl bg-muted border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50"
-                />
+              <div className="flex items-center gap-1">
+                {user && !showHistory && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setShowHistory(true)}
+                    title="Chat History"
+                  >
+                    <History className="w-4 h-4" />
+                  </Button>
+                )}
                 <Button
-                  onClick={() => handleSend()}
-                  disabled={!input.trim() || isLoading}
-                  className="rounded-xl bg-gradient-to-r from-primary to-cyan hover:opacity-90"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsOpen(false)}
                 >
-                  <Send className="w-4 h-4" />
+                  <X className="w-4 h-4" />
                 </Button>
               </div>
             </div>
+
+            {showHistory ? (
+              <ChatHistoryPanel
+                conversations={conversations}
+                currentConversationId={currentConversationId}
+                onSelectConversation={handleSelectConversation}
+                onNewConversation={handleNewConversation}
+                onDeleteConversation={deleteConversation}
+                isLoading={historyLoading}
+              />
+            ) : (
+              <>
+                {/* Messages */}
+                <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin max-h-[400px]">
+                  {messages.map((message) => (
+                    <motion.div
+                      key={message.id}
+                      className={`flex gap-3 ${message.role === 'user' ? 'flex-row-reverse' : ''}`}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                    >
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                        message.role === 'user' 
+                          ? 'bg-secondary/20 text-secondary' 
+                          : 'bg-primary/20 text-primary'
+                      }`}>
+                        {message.role === 'user' ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
+                      </div>
+                      <div className={`max-w-[80%] p-3 rounded-xl ${
+                        message.role === 'user'
+                          ? 'bg-secondary/20 text-foreground'
+                          : 'bg-muted text-foreground'
+                      }`}>
+                        <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                      </div>
+                    </motion.div>
+                  ))}
+                  
+                  {isLoading && messages[messages.length - 1]?.role !== 'assistant' && (
+                    <motion.div
+                      className="flex gap-3"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-primary/20 text-primary flex items-center justify-center">
+                        <Bot className="w-4 h-4" />
+                      </div>
+                      <div className="bg-muted p-3 rounded-xl">
+                        <div className="flex gap-1">
+                          <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" />
+                          <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce animation-delay-200" />
+                          <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce animation-delay-400" />
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                  <div ref={messagesEndRef} />
+                </div>
+
+                {/* Suggested Questions */}
+                {messages.length <= 2 && (
+                  <div className="px-4 pb-2">
+                    <p className="text-xs text-muted-foreground mb-2">Suggested questions:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {suggestedQuestions.slice(0, 3).map((q) => (
+                        <button
+                          key={q}
+                          onClick={() => handleSend(q)}
+                          disabled={isLoading}
+                          className="text-xs px-3 py-1.5 rounded-full bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+                        >
+                          {q.length > 35 ? q.substring(0, 35) + '...' : q}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Input */}
+                <div className="p-4 border-t border-border">
+                  {!user && (
+                    <p className="text-xs text-muted-foreground mb-2 text-center">
+                      Sign in to save your conversation history
+                    </p>
+                  )}
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={input}
+                      onChange={(e) => setInput(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                      placeholder="Ask about research impact..."
+                      disabled={isLoading}
+                      className="flex-1 px-4 py-2 rounded-xl bg-muted border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50"
+                    />
+                    <Button
+                      onClick={() => handleSend()}
+                      disabled={!input.trim() || isLoading}
+                      className="rounded-xl bg-gradient-to-r from-primary to-cyan hover:opacity-90"
+                    >
+                      <Send className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              </>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
