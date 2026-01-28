@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
 import UserMenu from '@/components/auth/UserMenu';
+import NotificationsPanel from '@/components/notifications/NotificationsPanel';
 
 interface HeaderProps {
   activeTab: string;
@@ -110,7 +111,10 @@ export default function Header({ activeTab, setActiveTab, onOpenAuth, onOpenProf
             )}
 
             {user ? (
-              <UserMenu onOpenProfile={onOpenProfile} />
+              <>
+                <NotificationsPanel />
+                <UserMenu onOpenProfile={onOpenProfile} />
+              </>
             ) : (
               <Button 
                 onClick={onOpenAuth}
