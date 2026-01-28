@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   X, Award, BookOpen, Users, TrendingUp, Building2, 
-  ExternalLink, Edit2, Save, Loader2, Link2 
+  ExternalLink, Edit2, Save, Loader2, Link2, Search, BarChart3 
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,6 +13,9 @@ import PublicationTimeline from './PublicationTimeline';
 import CollaborationMap from './CollaborationMap';
 import HIndexChart from './HIndexChart';
 import OrcidSync from './OrcidSync';
+import PublicationSearch from '@/components/publications/PublicationSearch';
+import ResearchTeamsPanel from '@/components/teams/ResearchTeamsPanel';
+import CitationImpactTracker from '@/components/citations/CitationImpactTracker';
 
 interface ResearcherProfileProps {
   isOpen: boolean;
@@ -24,7 +27,7 @@ export default function ResearcherProfile({ isOpen, onClose }: ResearcherProfile
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<'overview' | 'publications' | 'collaborations' | 'orcid'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'publications' | 'search' | 'teams' | 'citations' | 'collaborations' | 'orcid'>('overview');
   
   const [formData, setFormData] = useState({
     display_name: '',
@@ -83,8 +86,11 @@ export default function ResearcherProfile({ isOpen, onClose }: ResearcherProfile
   const tabs = [
     { id: 'overview', label: 'Overview' },
     { id: 'publications', label: 'Publications' },
-    { id: 'collaborations', label: 'Collaborations' },
-    { id: 'orcid', label: 'ORCID Sync', icon: Link2 },
+    { id: 'search', label: 'Search', icon: Search },
+    { id: 'teams', label: 'Teams', icon: Users },
+    { id: 'citations', label: 'Impact', icon: BarChart3 },
+    { id: 'collaborations', label: 'Network' },
+    { id: 'orcid', label: 'ORCID', icon: Link2 },
   ] as const;
 
   return (
@@ -279,6 +285,9 @@ export default function ResearcherProfile({ isOpen, onClose }: ResearcherProfile
           )}
 
           {activeTab === 'publications' && <PublicationTimeline />}
+          {activeTab === 'search' && <PublicationSearch />}
+          {activeTab === 'teams' && <ResearchTeamsPanel />}
+          {activeTab === 'citations' && <CitationImpactTracker />}
           {activeTab === 'collaborations' && <CollaborationMap />}
           {activeTab === 'orcid' && (
             <OrcidSync 
