@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Globe, BarChart3, Network, Brain, Settings, Menu, LogIn, Download, Shield } from 'lucide-react';
+import { Globe, BarChart3, Network, Brain, Settings, Menu, LogIn, Download, Shield, FileText } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -21,6 +21,10 @@ const navItems = [
   { id: 'dashboard', label: 'Analytics', icon: BarChart3 },
   { id: 'network', label: 'Collaboration', icon: Network },
   { id: 'predictions', label: 'Predictions', icon: Brain },
+];
+
+const userNavItems = [
+  { id: 'my-research', label: 'My Research', icon: FileText },
 ];
 
 export default function Header({ activeTab, setActiveTab, onOpenAuth, onOpenProfile, onOpenExport }: HeaderProps) {
@@ -70,6 +74,22 @@ export default function Header({ activeTab, setActiveTab, onOpenAuth, onOpenProf
                 <span className="text-sm font-medium">{item.label}</span>
               </motion.button>
             ))}
+            
+            {/* User Research Tab - only for authenticated users */}
+            {user && (
+              <motion.button
+                onClick={onOpenProfile}
+                className="nav-link flex items-center gap-2 rounded-lg text-primary hover:bg-primary/10"
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: 0.4 }}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <FileText className="w-4 h-4" />
+                <span className="text-sm font-medium">My Research</span>
+              </motion.button>
+            )}
           </nav>
 
           {/* Right Section */}
@@ -163,6 +183,34 @@ export default function Header({ activeTab, setActiveTab, onOpenAuth, onOpenProf
                   <span className="text-sm font-medium">{item.label}</span>
                 </button>
               ))}
+              
+              {/* My Research - for authenticated users */}
+              {user && (
+                <button
+                  onClick={() => {
+                    onOpenProfile();
+                    setMobileMenuOpen(false);
+                  }}
+                  className="flex items-center gap-2 p-3 rounded-lg transition-colors bg-primary/20 text-primary hover:bg-primary/30"
+                >
+                  <FileText className="w-4 h-4" />
+                  <span className="text-sm font-medium">My Research</span>
+                </button>
+              )}
+              
+              {/* Admin - for admin users */}
+              {isAdmin && (
+                <button
+                  onClick={() => {
+                    navigate('/admin');
+                    setMobileMenuOpen(false);
+                  }}
+                  className="flex items-center gap-2 p-3 rounded-lg transition-colors bg-secondary/20 text-secondary hover:bg-secondary/30"
+                >
+                  <Shield className="w-4 h-4" />
+                  <span className="text-sm font-medium">Admin</span>
+                </button>
+              )}
             </div>
           </motion.nav>
         )}
