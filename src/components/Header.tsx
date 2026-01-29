@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Globe, BarChart3, Network, Brain, Settings, Menu, LogIn, Download, Shield, FileText } from 'lucide-react';
+import { Globe, BarChart3, Network, Brain, Settings, Menu, LogIn, Download, Shield, FileText, Award, TrendingUp, BookOpen } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -29,7 +29,7 @@ const userNavItems = [
 
 export default function Header({ activeTab, setActiveTab, onOpenAuth, onOpenProfile, onOpenExport }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { isAdmin } = useUserRole();
   const navigate = useNavigate();
   return (
@@ -78,7 +78,7 @@ export default function Header({ activeTab, setActiveTab, onOpenAuth, onOpenProf
             {/* User Research Tab - only for authenticated users */}
             {user && (
               <motion.button
-                onClick={onOpenProfile}
+                onClick={() => navigate('/dashboard')}
                 className="nav-link flex items-center gap-2 rounded-lg text-primary hover:bg-primary/10"
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -94,6 +94,29 @@ export default function Header({ activeTab, setActiveTab, onOpenAuth, onOpenProf
 
           {/* Right Section */}
           <div className="flex items-center gap-3">
+            {/* Quick Stats for logged-in users */}
+            {user && profile && (
+              <motion.div 
+                className="hidden xl:flex items-center gap-2"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.5 }}
+              >
+                <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-primary/10">
+                  <Award className="w-3.5 h-3.5 text-primary" />
+                  <span className="text-xs font-medium text-foreground">{profile.h_index || 0}</span>
+                </div>
+                <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-secondary/10">
+                  <TrendingUp className="w-3.5 h-3.5 text-secondary" />
+                  <span className="text-xs font-medium text-foreground">{profile.total_citations?.toLocaleString() || 0}</span>
+                </div>
+                <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-cyan/10">
+                  <BookOpen className="w-3.5 h-3.5 text-cyan" />
+                  <span className="text-xs font-medium text-foreground">{profile.total_publications || 0}</span>
+                </div>
+              </motion.div>
+            )}
+            
             <motion.div 
               className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald/20 border border-emerald/30"
               initial={{ opacity: 0, scale: 0.9 }}
@@ -188,7 +211,7 @@ export default function Header({ activeTab, setActiveTab, onOpenAuth, onOpenProf
               {user && (
                 <button
                   onClick={() => {
-                    onOpenProfile();
+                    navigate('/dashboard');
                     setMobileMenuOpen(false);
                   }}
                   className="flex items-center gap-2 p-3 rounded-lg transition-colors bg-primary/20 text-primary hover:bg-primary/30"

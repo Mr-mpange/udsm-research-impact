@@ -1,8 +1,9 @@
 import { useRef, useMemo, useState } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
+import { Canvas, useFrame, useLoader } from '@react-three/fiber';
 import { OrbitControls, Sphere, Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { countryMetrics, CountryMetrics } from '@/data/researchData';
+import earthTexture from '@/assets/earth-hero.jpg';
 
 interface GlobePointProps {
   position: [number, number, number];
@@ -85,6 +86,9 @@ function GlobePoint({ position, data, onHover }: GlobePointProps) {
 function GlobeMesh() {
   const groupRef = useRef<THREE.Group>(null);
   const [hoveredCountry, setHoveredCountry] = useState<CountryMetrics | null>(null);
+  
+  // Load Earth texture
+  const texture = useLoader(THREE.TextureLoader, earthTexture);
 
   useFrame(() => {
     if (groupRef.current && !hoveredCountry) {
@@ -128,14 +132,14 @@ function GlobeMesh() {
 
   return (
     <group ref={groupRef}>
-      {/* Main globe sphere */}
+      {/* Main globe sphere with Earth texture */}
       <Sphere args={[2, 64, 64]}>
         <meshStandardMaterial
-          color="#0a1628"
+          map={texture}
           transparent
-          opacity={0.9}
-          roughness={0.8}
-          metalness={0.2}
+          opacity={0.95}
+          roughness={0.6}
+          metalness={0.1}
         />
       </Sphere>
       
