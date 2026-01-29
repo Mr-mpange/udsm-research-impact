@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { User, LogOut, Settings, FileText, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 interface UserMenuProps {
@@ -12,6 +13,7 @@ interface UserMenuProps {
 export default function UserMenu({ onOpenProfile }: UserMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const { user, profile, signOut } = useAuth();
+  const navigate = useNavigate();
 
   if (!user) return null;
 
@@ -66,13 +68,13 @@ export default function UserMenu({ onOpenProfile }: UserMenuProps) {
               <div className="p-1">
                 <button
                   onClick={() => {
-                    onOpenProfile();
+                    navigate('/dashboard');
                     setIsOpen(false);
                   }}
                   className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg hover:bg-muted transition-colors"
                 >
                   <User className="w-4 h-4" />
-                  My Profile
+                  My Dashboard
                 </button>
                 <button
                   onClick={() => setIsOpen(false)}
