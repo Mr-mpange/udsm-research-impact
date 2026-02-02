@@ -83,16 +83,27 @@ function GlobePoint({ position, data, onHover }: GlobePointProps) {
   );
 }
 
-function GlobeMesh() {
+interface GlobeMeshProps {
+  autoRotate: boolean;
+}
+
+function GlobeMesh({ autoRotate }: GlobeMeshProps) {
   const groupRef = useRef<THREE.Group>(null);
+  const cloudRef = useRef<THREE.Mesh>(null);
   const [hoveredCountry, setHoveredCountry] = useState<CountryMetrics | null>(null);
   
   // Load Earth texture
   const texture = useLoader(THREE.TextureLoader, earthTexture);
 
   useFrame(() => {
-    if (groupRef.current && !hoveredCountry) {
-      groupRef.current.rotation.y += 0.001;
+    // Auto-rotate globe
+    if (groupRef.current && !hoveredCountry && autoRotate) {
+      groupRef.current.rotation.y += 0.002;
+    }
+    
+    // Rotate clouds slightly faster for realism
+    if (cloudRef.current && autoRotate) {
+      cloudRef.current.rotation.y += 0.0025;
     }
   });
 
@@ -101,6 +112,39 @@ function GlobeMesh() {
       position: latLngToVector3(country.lat, country.lng, 2.02),
       data: country,
     }));
+  }, []);
+
+  // Create cloud pattern geometry
+  const cloudPatterns = useMemo(() => {
+    const patterns: { position: [number, number, number]; scale: number; opacity: number }[] = [];
+    
+    // Generate cloud clusters at various positions
+    const cloudZones = [
+      { lat: 45, lng: -30, size: 0.3 },
+      { lat: 30, lng: 60, size: 0.25 },
+      { lat: -15, lng: 120, size: 0.28 },
+      { lat: 60, lng: -100, size: 0.22 },
+      { lat: -40, lng: 30, size: 0.26 },
+      { lat: 20, lng: -60, size: 0.24 },
+      { lat: -30, lng: -120, size: 0.27 },
+      { lat: 50, lng: 140, size: 0.23 },
+      { lat: 10, lng: 0, size: 0.21 },
+      { lat: -50, lng: 90, size: 0.25 },
+    ];
+    
+    cloudZones.forEach(zone => {
+      for (let i = 0; i < 5; i++) {
+        const offsetLat = zone.lat + (Math.random() - 0.5) * 20;
+        const offsetLng = zone.lng + (Math.random() - 0.5) * 30;
+        patterns.push({
+          position: latLngToVector3(offsetLat, offsetLng, 2.04),
+          scale: zone.size * (0.8 + Math.random() * 0.4),
+          opacity: 0.3 + Math.random() * 0.3,
+        });
+      }
+    });
+    
+    return patterns;
   }, []);
 
   // Create grid lines for the globe
@@ -166,6 +210,29 @@ function GlobeMesh() {
         />
       </Sphere>
 
+      {/* Cloud layer */}
+      <Sphere ref={cloudRef} args={[2.03, 48, 48]}>
+        <meshBasicMaterial
+          color="#ffffff"
+          transparent
+          opacity={0.25}
+          depthWrite={false}
+        />
+      </Sphere>
+
+      {/* Cloud patches for realism */}
+      {cloudPatterns.map((cloud, i) => (
+        <mesh key={`cloud-${i}`} position={cloud.position}>
+          <sphereGeometry args={[cloud.scale * 0.15, 8, 8]} />
+          <meshBasicMaterial
+            color="#ffffff"
+            transparent
+            opacity={cloud.opacity * 0.5}
+            depthWrite={false}
+          />
+        </mesh>
+      ))}
+
       {/* Grid lines */}
       {gridLines.map((pts, i) => (
         <line key={i}>
@@ -230,13 +297,29 @@ function GlobeMesh() {
 }
 
 export default function Globe3D() {
+  const [autoRotate, setAutoRotate] = useState(true);
+
   return (
-    <div className="w-full h-full">
+    <div className="w-full h-full relative">
+      {/* Zoom controls overlay */}
+      <div className="absolute bottom-4 left-4 z-10 flex flex-col gap-2">
+        <button
+          onClick={() => setAutoRotate(!autoRotate)}
+          className="glass-panel px-3 py-2 text-xs font-medium hover:bg-primary/10 transition-colors"
+          title={autoRotate ? 'Pause rotation' : 'Resume rotation'}
+        >
+          {autoRotate ? '⏸ Pause' : '▶ Rotate'}
+        </button>
+        <div className="glass-panel px-3 py-2 text-xs text-muted-foreground">
+          🖱️ Scroll to zoom
+        </div>
+      </div>
+      
       <Canvas camera={{ position: [0, 0, 5], fov: 45 }}>
         <ambientLight intensity={0.5} />
         <pointLight position={[10, 10, 10]} intensity={1} />
         <pointLight position={[-10, -10, -10]} intensity={0.5} color="#3b82f6" />
-        <GlobeMesh />
+        <GlobeMesh autoRotate={autoRotate} />
         <OrbitControls
           enableZoom={true}
           enablePan={false}
