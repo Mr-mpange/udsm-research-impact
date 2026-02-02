@@ -136,19 +136,32 @@ function GlobeMesh() {
       <Sphere args={[2, 64, 64]}>
         <meshStandardMaterial
           map={texture}
+          color="#4a90d9"
           transparent
-          opacity={0.95}
-          roughness={0.6}
+          opacity={1}
+          roughness={0.5}
           metalness={0.1}
+          emissive="#1a4a7a"
+          emissiveIntensity={0.1}
         />
       </Sphere>
       
-      {/* Globe outline glow */}
-      <Sphere args={[2.005, 64, 64]}>
+      {/* Atmospheric glow effect */}
+      <Sphere args={[2.02, 64, 64]}>
+        <meshBasicMaterial
+          color="#60a5fa"
+          transparent
+          opacity={0.15}
+          side={THREE.BackSide}
+        />
+      </Sphere>
+      
+      {/* Outer atmosphere halo */}
+      <Sphere args={[2.08, 64, 64]}>
         <meshBasicMaterial
           color="#3b82f6"
           transparent
-          opacity={0.1}
+          opacity={0.08}
           side={THREE.BackSide}
         />
       </Sphere>
