@@ -7,6 +7,7 @@ import earthTexture from '@/assets/earth-hero.jpg';
 import { GlobePoint } from './globe/GlobePoint';
 import { DayNightEffect } from './globe/DayNightEffect';
 import { AnimatedFlightPath } from './globe/AnimatedFlightPath';
+import { ActivityIndicators } from './globe/ActivityPulse';
 
 function latLngToVector3(lat: number, lng: number, radius: number): [number, number, number] {
   const phi = (90 - lat) * (Math.PI / 180);
@@ -48,13 +49,47 @@ function GlobeMesh({ autoRotate }: GlobeMeshProps) {
     }));
   }, []);
 
-  // Flight paths from UDSM to partner countries
+  // Flight paths from UDSM to partner countries with destination data
   const flightPaths = useMemo(() => {
     const udsmPos = latLngToVector3(UDSM_COORDS.lat, UDSM_COORDS.lng, 2.02);
     return countryMetrics.slice(0, 10).map((country) => ({
       startPos: udsmPos,
       endPos: latLngToVector3(country.lat, country.lng, 2.02),
+      destinationData: country,
     }));
+  }, []);
+
+  // Real-time activity indicators - simulated live research activity
+  const activityIndicators = useMemo(() => {
+    const activities: Array<{
+      position: [number, number, number];
+      intensity: number;
+      type: 'read' | 'citation' | 'download' | 'collaboration';
+    }> = [];
+    
+    const activityTypes: ('read' | 'citation' | 'download' | 'collaboration')[] = 
+      ['read', 'citation', 'download', 'collaboration'];
+    
+    // Generate activity pulses at various locations
+    countryMetrics.forEach((country, i) => {
+      // Only show activities for countries with higher engagement
+      if (country.reads > 20000) {
+        activities.push({
+          position: latLngToVector3(country.lat, country.lng, 2.03),
+          intensity: Math.min(1, country.reads / 50000),
+          type: activityTypes[i % 4],
+        });
+      }
+    });
+    
+    // Add activity at UDSM
+    activities.push({
+      position: latLngToVector3(UDSM_COORDS.lat, UDSM_COORDS.lng, 2.03),
+      intensity: 1,
+      type: 'collaboration',
+    });
+    
+    return activities;
   }, []);
 
   // Grid lines for the globe
@@ -151,7 +186,7 @@ function GlobeMesh({ autoRotate }: GlobeMeshProps) {
         />
       ))}
 
-      {/* Animated flight paths from UDSM */}
+      {/* Animated flight paths from UDSM with tooltips */}
       {flightPaths.map((path, i) => (
         <AnimatedFlightPath
           key={`flight-${i}`}
@@ -159,8 +194,12 @@ function GlobeMesh({ autoRotate }: GlobeMeshProps) {
           endPos={path.endPos}
           index={i}
           color="#fbbf24"
+          destinationData={path.destinationData}
         />
       ))}
+
+      {/* Real-time activity indicators */}
+      <ActivityIndicators activities={activityIndicators} />
 
       {/* UDSM marker (origin point) */}
       <mesh position={latLngToVector3(UDSM_COORDS.lat, UDSM_COORDS.lng, 2.05)}>
@@ -197,14 +236,33 @@ export default function Globe3D() {
       </div>
 
       {/* Legend */}
-      <div className="absolute top-4 right-4 z-10 glass-panel px-3 py-2 text-xs">
-        <div className="flex items-center gap-2 mb-1">
+      <div className="absolute top-4 right-4 z-10 glass-panel px-3 py-2 text-xs space-y-1.5">
+        <div className="font-medium text-foreground mb-2">Legend</div>
+        <div className="flex items-center gap-2">
           <span className="w-3 h-3 rounded-full bg-secondary"></span>
           <span className="text-muted-foreground">UDSM (Origin)</span>
         </div>
         <div className="flex items-center gap-2">
           <span className="w-3 h-3 rounded-full bg-primary"></span>
           <span className="text-muted-foreground">Research Partners</span>
+        </div>
+        <div className="border-t border-border/50 my-1.5"></div>
+        <div className="font-medium text-foreground text-[10px] mb-1">Live Activity</div>
+        <div className="flex items-center gap-2">
+          <span className="w-2.5 h-2.5 rounded-full bg-[#3b82f6]"></span>
+          <span className="text-muted-foreground text-[10px]">Reads</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="w-2.5 h-2.5 rounded-full bg-[#22c55e]"></span>
+          <span className="text-muted-foreground text-[10px]">Citations</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="w-2.5 h-2.5 rounded-full bg-[#f59e0b]"></span>
+          <span className="text-muted-foreground text-[10px]">Downloads</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="w-2.5 h-2.5 rounded-full bg-[#8b5cf6]"></span>
+          <span className="text-muted-foreground text-[10px]">Collaborations</span>
         </div>
       </div>
       
