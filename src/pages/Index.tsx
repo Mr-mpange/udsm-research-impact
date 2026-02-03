@@ -12,9 +12,11 @@ import ResearcherProfile from '@/components/profile/ResearcherProfile';
 import DataExport from '@/components/export/DataExport';
 import SavedDashboardsPanel from '@/components/dashboard/SavedDashboardsPanel';
 import { countryMetrics } from '@/data/researchData';
-import { MapPin, TrendingUp, Users, BookOpen } from 'lucide-react';
+import { MapPin, TrendingUp, Users, BookOpen, Database, Sparkles } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useSavedDashboards, type DashboardConfig } from '@/hooks/useSavedDashboards';
+import { useInstitutionalStats } from '@/hooks/useInstitutionalStats';
+import { Badge } from '@/components/ui/badge';
 
 export default function Index() {
   const [activeTab, setActiveTab] = useState('globe');
@@ -23,6 +25,7 @@ export default function Index() {
   const [showExport, setShowExport] = useState(false);
   const { user } = useAuth();
   const { dashboards, isLoading: dashboardsLoading, saveDashboard, deleteDashboard } = useSavedDashboards();
+  const { stats: realStats, isLoading: statsLoading, isAuthenticated } = useInstitutionalStats();
 
   const handleLoadDashboard = (config: DashboardConfig) => {
     if (config.activeTab) {
@@ -34,8 +37,12 @@ export default function Index() {
     await saveDashboard(name, { ...config, activeTab });
   };
 
+  // Demo data for non-authenticated users
   const totalReads = countryMetrics.reduce((acc, c) => acc + c.reads, 0);
   const totalCitations = countryMetrics.reduce((acc, c) => acc + c.citations, 0);
+
+  // Determine which stats to show
+  const showRealData = isAuthenticated && realStats && !statsLoading;
 
   return (
     <div className="min-h-screen bg-background">
@@ -82,14 +89,32 @@ export default function Index() {
                   </motion.div>
                 </div>
 
-                {/* Quick Stats */}
+                {/* Quick Stats - Real data for authenticated users, demo for visitors */}
+                <div className="mb-4">
+                  {showRealData ? (
+                    <Badge variant="secondary" className="mb-2">
+                      <Database className="w-3 h-3 mr-1" />
+                      Live Institutional Data
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="mb-2">
+                      <Sparkles className="w-3 h-3 mr-1" />
+                      Demo Data • Sign in for real stats
+                    </Badge>
+                  )}
+                </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                  {[
+                  {(showRealData ? [
+                    { label: 'Total Publications', value: realStats.totalPublications.toLocaleString(), icon: BookOpen, color: 'primary' },
+                    { label: 'Total Citations', value: realStats.totalCitations.toLocaleString(), icon: TrendingUp, color: 'secondary' },
+                    { label: 'Researchers', value: realStats.totalResearchers.toLocaleString(), icon: Users, color: 'cyan' },
+                    { label: 'Avg H-Index', value: realStats.avgHIndex.toString(), icon: MapPin, color: 'emerald' },
+                  ] : [
                     { label: 'Countries Reached', value: countryMetrics.length, icon: MapPin, color: 'primary' },
                     { label: 'Global Reads', value: `${(totalReads / 1000).toFixed(0)}K+`, icon: BookOpen, color: 'cyan' },
                     { label: 'Total Citations', value: `${(totalCitations / 1000).toFixed(0)}K+`, icon: TrendingUp, color: 'secondary' },
                     { label: 'Partner Universities', value: '48', icon: Users, color: 'emerald' },
-                  ].map((stat, index) => (
+                  ]).map((stat, index) => (
                     <motion.div
                       key={stat.label}
                       className="glass-panel p-4 flex items-center gap-3"
