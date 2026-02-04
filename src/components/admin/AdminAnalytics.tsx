@@ -11,11 +11,11 @@ import {
   Clock,
   Crown,
   AlertTriangle,
-  CheckCircle2,
-  XCircle,
   Eye,
   Trash2,
-  RefreshCw
+  RefreshCw,
+  FileText,
+  Shield
 } from 'lucide-react';
 import {
   AreaChart,
@@ -36,6 +36,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 import { formatDistanceToNow } from 'date-fns';
 
 // Aggregate mock data for institution-wide analytics
@@ -91,7 +92,18 @@ interface ModerationItem {
   status: 'pending' | 'approved' | 'flagged';
 }
 
+interface AuditLogEntry {
+  id: string;
+  admin_user_id: string;
+  action: string;
+  target_type: string;
+  target_id: string | null;
+  details: Record<string, any>;
+  created_at: string;
+}
+
 export default function AdminAnalytics() {
+  const { user } = useAuth();
   const [realStats, setRealStats] = useState({
     totalUsers: 0,
     totalPublications: 0,
@@ -100,6 +112,7 @@ export default function AdminAnalytics() {
   const [topResearchers, setTopResearchers] = useState<TopResearcher[]>([]);
   const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
   const [moderationItems, setModerationItems] = useState<ModerationItem[]>([]);
+  const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
@@ -113,7 +126,8 @@ export default function AdminAnalytics() {
       fetchRealStats(),
       fetchTopResearchers(),
       fetchRecentActivity(),
-      fetchModerationItems()
+      fetchModerationItems(),
+      fetchAuditLogs()
     ]);
     setIsLoading(false);
   }
@@ -248,7 +262,36 @@ export default function AdminAnalytics() {
     setModerationItems(items);
   }
 
-  async function handleDeletePublication(id: string) {
+  async function fetchAuditLogs() {
+    const { data } = await supabase
+      .from('audit_logs')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(20);
+
+    if (data) {
+      setAuditLogs(data as AuditLogEntry[]);
+    }
+  }
+
+  async function logAdminAction(action: string, targetType: string, targetId: string | null, details: Record<string, any> = {}) {
+    if (!user) return;
+    
+    await supabase
+      .from('audit_logs')
+      .insert({
+        admin_user_id: user.id,
+        action,
+        target_type: targetType,
+        target_id: targetId,
+        details
+      });
+    
+    // Refresh audit logs
+    fetchAuditLogs();
+  }
+
+  async function handleDeletePublication(id: string, title?: string) {
     const { error } = await supabase
       .from('researcher_publications')
       .delete()
@@ -261,6 +304,7 @@ export default function AdminAnalytics() {
         description: 'Failed to delete publication'
       });
     } else {
+      await logAdminAction('delete_publication', 'publication', id, { title: title || 'Unknown' });
       toast({
         title: 'Success',
         description: 'Publication deleted'
@@ -269,7 +313,7 @@ export default function AdminAnalytics() {
     }
   }
 
-  async function handleDeleteTeam(id: string) {
+  async function handleDeleteTeam(id: string, name?: string) {
     const { error } = await supabase
       .from('research_teams')
       .delete()
@@ -282,6 +326,7 @@ export default function AdminAnalytics() {
         description: 'Failed to delete team'
       });
     } else {
+      await logAdminAction('delete_team', 'team', id, { name: name || 'Unknown' });
       toast({
         title: 'Success',
         description: 'Team deleted'
@@ -554,9 +599,9 @@ export default function AdminAnalytics() {
                     className="h-8 w-8 text-destructive hover:text-destructive"
                     onClick={() => {
                       if (item.type === 'publication') {
-                        handleDeletePublication(item.id);
+                        handleDeletePublication(item.id, item.title);
                       } else if (item.type === 'team') {
-                        handleDeleteTeam(item.id);
+                        handleDeleteTeam(item.id, item.title);
                       }
                     }}
                   >
@@ -689,6 +734,69 @@ export default function AdminAnalytics() {
           </BarChart>
         </ResponsiveContainer>
       </div>
+
+      {/* Admin Audit Log */}
+      <motion.div
+        className="glass-panel p-6"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.5 }}
+      >
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-display font-semibold text-foreground flex items-center gap-2">
+            <FileText className="w-5 h-5 text-primary" />
+            Admin Audit Log
+          </h3>
+          <Button variant="ghost" size="sm" onClick={fetchAuditLogs}>
+            <RefreshCw className="w-4 h-4" />
+          </Button>
+        </div>
+        <ScrollArea className="h-[250px]">
+          <div className="space-y-2">
+            {auditLogs.length === 0 ? (
+              <div className="text-center py-8">
+                <Shield className="w-10 h-10 text-muted-foreground mx-auto mb-2" />
+                <p className="text-muted-foreground text-sm">No admin actions logged yet</p>
+                <p className="text-xs text-muted-foreground/70 mt-1">
+                  Actions like content deletion will appear here for accountability
+                </p>
+              </div>
+            ) : (
+              auditLogs.map((log, index) => (
+                <motion.div
+                  key={log.id}
+                  className="flex items-start gap-3 p-3 rounded-lg bg-muted/30"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.05 * index }}
+                >
+                  <div className={`p-2 rounded-lg ${
+                    log.action.includes('delete') ? 'bg-destructive/20' : 'bg-primary/20'
+                  }`}>
+                    {log.action.includes('delete') ? (
+                      <Trash2 className="w-4 h-4 text-destructive" />
+                    ) : (
+                      <Activity className="w-4 h-4 text-primary" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-foreground font-medium">
+                      {log.action.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {log.target_type}: {(log.details as any)?.title || (log.details as any)?.name || log.target_id?.slice(0, 8)}
+                    </p>
+                    <p className="text-xs text-muted-foreground/70 flex items-center gap-1 mt-1">
+                      <Clock className="w-3 h-3" />
+                      {formatDistanceToNow(new Date(log.created_at), { addSuffix: true })}
+                    </p>
+                  </div>
+                </motion.div>
+              ))
+            )}
+          </div>
+        </ScrollArea>
+      </motion.div>
     </div>
   );
 }
