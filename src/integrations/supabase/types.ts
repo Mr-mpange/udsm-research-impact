@@ -263,36 +263,45 @@ export type Database = {
       }
       researcher_publications: {
         Row: {
+          abstract: string | null
           citations: number | null
           co_authors: string[] | null
           created_at: string
           doi: string | null
           id: string
           journal: string | null
+          keywords: string[] | null
+          pdf_url: string | null
           quartile: string | null
           title: string
           user_id: string
           year: number | null
         }
         Insert: {
+          abstract?: string | null
           citations?: number | null
           co_authors?: string[] | null
           created_at?: string
           doi?: string | null
           id?: string
           journal?: string | null
+          keywords?: string[] | null
+          pdf_url?: string | null
           quartile?: string | null
           title: string
           user_id: string
           year?: number | null
         }
         Update: {
+          abstract?: string | null
           citations?: number | null
           co_authors?: string[] | null
           created_at?: string
           doi?: string | null
           id?: string
           journal?: string | null
+          keywords?: string[] | null
+          pdf_url?: string | null
           quartile?: string | null
           title?: string
           user_id?: string
