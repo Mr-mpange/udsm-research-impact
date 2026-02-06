@@ -28,10 +28,6 @@ const publicDemoTabs = [
   { id: 'predictions', label: 'Predictions Demo', icon: Brain },
 ];
 
-const userNavItems = [
-  { id: 'my-research', label: 'My Research', icon: FileText },
-];
-
 export default function Header({ activeTab, setActiveTab, onOpenAuth, onOpenProfile, onOpenExport }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, profile } = useAuth();

@@ -43,29 +43,37 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
           description: "You've successfully signed in.",
         });
       }
-      onClose();
-      setEmail('');
-      setPassword('');
-      setName('');
+      
+      // Wait a bit longer for auth state to settle
+      await new Promise(resolve => setTimeout(resolve, 500));
       
       // Check user role and redirect accordingly
-      setTimeout(async () => {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          // Check if user has admin role
-          const { data: roles } = await supabase
-            .from('user_roles')
-            .select('role')
-            .eq('user_id', user.id);
-          
-          const isAdmin = roles?.some(r => r.role === 'admin');
-          
-          // Redirect admin users to admin dashboard, others to regular dashboard
-          navigate(isAdmin ? '/admin' : '/dashboard');
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        // Check if user has admin role
+        const { data: roles } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', user.id);
+        
+        const isAdmin = roles?.some(r => r.role === 'admin');
+        
+        // Close modal first
+        onClose();
+        setEmail('');
+        setPassword('');
+        setName('');
+        
+        // Then redirect based on role
+        if (isAdmin) {
+          navigate('/admin', { replace: true });
         } else {
-          navigate('/dashboard');
+          navigate('/dashboard', { replace: true });
         }
-      }, 100);
+      } else {
+        onClose();
+        navigate('/dashboard', { replace: true });
+      }
     } catch (error: any) {
       toast({
         variant: "destructive",
