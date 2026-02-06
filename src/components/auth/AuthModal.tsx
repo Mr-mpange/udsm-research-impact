@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Mail, Lock, User, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -19,9 +19,46 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { signIn, signUp } = useAuth();
+  const [shouldRedirect, setShouldRedirect] = useState(false);
+  const { signIn, signUp, user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  // Handle redirect after successful authentication
+  useEffect(() => {
+    if (shouldRedirect && user) {
+      const checkRoleAndRedirect = async () => {
+        try {
+          // Check if user has admin role
+          const { data: roles } = await supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', user.id);
+          
+          const isAdmin = roles?.some(r => r.role === 'admin');
+          
+          // Close modal
+          onClose();
+          
+          // Use window.location for a full page reload to ensure auth state is fresh
+          setTimeout(() => {
+            if (isAdmin) {
+              window.location.href = '/admin';
+            } else {
+              window.location.href = '/dashboard';
+            }
+          }, 300);
+        } catch (error) {
+          console.error('Error checking role:', error);
+          window.location.href = '/dashboard';
+        } finally {
+          setShouldRedirect(false);
+        }
+      };
+      
+      checkRoleAndRedirect();
+    }
+  }, [shouldRedirect, user, onClose]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,36 +81,13 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
         });
       }
       
-      // Wait a bit longer for auth state to settle
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Clear form
+      setEmail('');
+      setPassword('');
+      setName('');
       
-      // Check user role and redirect accordingly
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        // Check if user has admin role
-        const { data: roles } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', user.id);
-        
-        const isAdmin = roles?.some(r => r.role === 'admin');
-        
-        // Close modal first
-        onClose();
-        setEmail('');
-        setPassword('');
-        setName('');
-        
-        // Then redirect based on role
-        if (isAdmin) {
-          navigate('/admin', { replace: true });
-        } else {
-          navigate('/dashboard', { replace: true });
-        }
-      } else {
-        onClose();
-        navigate('/dashboard', { replace: true });
-      }
+      // Trigger redirect via useEffect
+      setShouldRedirect(true);
     } catch (error: any) {
       toast({
         variant: "destructive",
