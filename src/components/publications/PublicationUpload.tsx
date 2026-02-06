@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Upload, Plus, Loader2, X, FileText } from 'lucide-react';
+import { Upload, Plus, Loader2, X, FileText, File } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -19,7 +19,6 @@ interface PublicationFormData {
   quartile: string;
   keywords: string;
   co_authors: string;
-  pdf_url: string;
 }
 
 interface PublicationUploadProps {
@@ -31,6 +30,10 @@ export default function PublicationUpload({ onSuccess }: PublicationUploadProps)
   const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [isUploadingPdf, setIsUploadingPdf] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
   const [formData, setFormData] = useState<PublicationFormData>({
     title: '',
     journal: '',
@@ -40,8 +43,39 @@ export default function PublicationUpload({ onSuccess }: PublicationUploadProps)
     quartile: 'Q1',
     keywords: '',
     co_authors: '',
-    pdf_url: '',
   });
+
+  const uploadPdf = async (): Promise<string | null> => {
+    if (!pdfFile || !user) return null;
+
+    setIsUploadingPdf(true);
+    const fileExt = pdfFile.name.split('.').pop();
+    const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('publications')
+      .upload(fileName, pdfFile, {
+        cacheControl: '3600',
+        upsert: false,
+      });
+
+    setIsUploadingPdf(false);
+
+    if (uploadError) {
+      toast({
+        variant: "destructive",
+        title: "PDF upload failed",
+        description: uploadError.message,
+      });
+      return null;
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('publications')
+      .getPublicUrl(fileName);
+
+    return publicUrl;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,6 +100,12 @@ export default function PublicationUpload({ onSuccess }: PublicationUploadProps)
 
     setIsSubmitting(true);
 
+    // Upload PDF if provided
+    let pdfUrl: string | null = null;
+    if (pdfFile) {
+      pdfUrl = await uploadPdf();
+    }
+
     const keywordsArray = formData.keywords
       .split(',')
       .map(k => k.trim())
@@ -88,7 +128,7 @@ export default function PublicationUpload({ onSuccess }: PublicationUploadProps)
         quartile: formData.quartile || null,
         keywords: keywordsArray.length > 0 ? keywordsArray : null,
         co_authors: coAuthorsArray.length > 0 ? coAuthorsArray : null,
-        pdf_url: formData.pdf_url || null,
+        pdf_url: pdfUrl,
         citations: 0,
       });
 
@@ -105,24 +145,51 @@ export default function PublicationUpload({ onSuccess }: PublicationUploadProps)
         title: "Publication added",
         description: "Your publication has been successfully uploaded.",
       });
-      setFormData({
-        title: '',
-        journal: '',
-        year: new Date().getFullYear(),
-        doi: '',
-        abstract: '',
-        quartile: 'Q1',
-        keywords: '',
-        co_authors: '',
-        pdf_url: '',
-      });
-      setIsOpen(false);
+      resetForm();
       onSuccess?.();
     }
   };
 
+  const resetForm = () => {
+    setFormData({
+      title: '',
+      journal: '',
+      year: new Date().getFullYear(),
+      doi: '',
+      abstract: '',
+      quartile: 'Q1',
+      keywords: '',
+      co_authors: '',
+    });
+    setPdfFile(null);
+    setIsOpen(false);
+  };
+
   const handleInputChange = (field: keyof PublicationFormData, value: string | number) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.type !== 'application/pdf') {
+        toast({
+          variant: "destructive",
+          title: "Invalid file type",
+          description: "Please upload a PDF file.",
+        });
+        return;
+      }
+      if (file.size > 20 * 1024 * 1024) {
+        toast({
+          variant: "destructive",
+          title: "File too large",
+          description: "PDF must be under 20MB.",
+        });
+        return;
+      }
+      setPdfFile(file);
+    }
   };
 
   if (!isOpen) {
@@ -145,7 +212,7 @@ export default function PublicationUpload({ onSuccess }: PublicationUploadProps)
           <FileText className="w-5 h-5" />
           Add New Publication
         </h3>
-        <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)}>
+        <Button variant="ghost" size="icon" onClick={resetForm}>
           <X className="w-4 h-4" />
         </Button>
       </div>
@@ -217,13 +284,42 @@ export default function PublicationUpload({ onSuccess }: PublicationUploadProps)
           </div>
 
           <div>
-            <Label htmlFor="pdf_url">PDF URL</Label>
-            <Input
-              id="pdf_url"
-              placeholder="https://..."
-              value={formData.pdf_url}
-              onChange={(e) => handleInputChange('pdf_url', e.target.value)}
+            <Label>PDF File</Label>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".pdf"
+              onChange={handleFileChange}
+              className="hidden"
             />
+            <div 
+              onClick={() => fileInputRef.current?.click()}
+              className="flex items-center gap-2 p-3 border border-input rounded-md cursor-pointer hover:bg-muted/50 transition-colors"
+            >
+              {pdfFile ? (
+                <>
+                  <File className="w-4 h-4 text-primary" />
+                  <span className="text-sm text-foreground truncate flex-1">{pdfFile.name}</span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setPdfFile(null);
+                    }}
+                  >
+                    <X className="w-3 h-3" />
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Upload className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">Upload PDF (max 20MB)</span>
+                </>
+              )}
+            </div>
           </div>
 
           <div className="md:col-span-2">
@@ -259,16 +355,16 @@ export default function PublicationUpload({ onSuccess }: PublicationUploadProps)
         </div>
 
         <div className="flex justify-end gap-3 pt-2">
-          <Button type="button" variant="ghost" onClick={() => setIsOpen(false)}>
+          <Button type="button" variant="ghost" onClick={resetForm}>
             Cancel
           </Button>
-          <Button type="submit" disabled={isSubmitting} className="gap-2">
-            {isSubmitting ? (
+          <Button type="submit" disabled={isSubmitting || isUploadingPdf} className="gap-2">
+            {isSubmitting || isUploadingPdf ? (
               <Loader2 className="w-4 h-4 animate-spin" />
             ) : (
               <Upload className="w-4 h-4" />
             )}
-            Upload Publication
+            {isUploadingPdf ? 'Uploading PDF...' : 'Upload Publication'}
           </Button>
         </div>
       </form>

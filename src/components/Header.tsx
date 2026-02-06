@@ -21,6 +21,7 @@ const navItems = [
   { id: 'dashboard', label: 'Analytics', icon: BarChart3 },
   { id: 'network', label: 'Collaboration', icon: Network },
   { id: 'predictions', label: 'Predictions', icon: Brain },
+  { id: 'research-network', label: 'Research Network', icon: BookOpen, isRoute: true, route: '/research' },
 ];
 
 const userNavItems = [
@@ -60,7 +61,13 @@ export default function Header({ activeTab, setActiveTab, onOpenAuth, onOpenProf
             {navItems.map((item, index) => (
               <motion.button
                 key={item.id}
-                onClick={() => setActiveTab(item.id)}
+                onClick={() => {
+                  if ('isRoute' in item && item.isRoute && 'route' in item) {
+                    navigate(item.route as string);
+                  } else {
+                    setActiveTab(item.id);
+                  }
+                }}
                 className={`nav-link flex items-center gap-2 rounded-lg ${
                   activeTab === item.id ? 'nav-link-active bg-muted' : ''
                 }`}
@@ -193,7 +200,11 @@ export default function Header({ activeTab, setActiveTab, onOpenAuth, onOpenProf
                 <button
                   key={item.id}
                   onClick={() => {
-                    setActiveTab(item.id);
+                    if ('isRoute' in item && item.isRoute && 'route' in item) {
+                      navigate(item.route as string);
+                    } else {
+                      setActiveTab(item.id);
+                    }
                     setMobileMenuOpen(false);
                   }}
                   className={`flex items-center gap-2 p-3 rounded-lg transition-colors ${
