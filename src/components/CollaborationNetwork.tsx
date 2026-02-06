@@ -4,36 +4,93 @@ import { collaborationNetwork } from '@/data/researchData';
 import { Building2, Wallet, GraduationCap } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
+interface PartnerInstitution {
+  id: string;
+  name: string;
+  type: string;
+  country: string | null;
+}
+
+interface Partnership {
+  id: string;
+  partner_institution_id: string;
+  collaboration_count: number;
+  joint_publications: number;
+  impact_score: number;
+  partner_institutions: PartnerInstitution;
+}
+
 export default function CollaborationNetwork() {
   const [stats, setStats] = useState({
     partnerInstitutions: 0,
     fundingBodies: 0,
     activeCollaborations: 0
   });
+  const [topPartners, setTopPartners] = useState<Partnership[]>([]);
 
   useEffect(() => {
     fetchCollaborationStats();
+    fetchTopPartners();
   }, []);
 
   async function fetchCollaborationStats() {
     try {
-      // Count research teams as collaborations
+      // Count partner institutions by type
+      const { data: partners } = await supabase
+        .from('partner_institutions')
+        .select('type');
+
+      if (partners) {
+        const universities = partners.filter(p => p.type === 'university' || p.type === 'research_center').length;
+        const funding = partners.filter(p => p.type === 'funding_body').length;
+        
+        setStats({
+          partnerInstitutions: universities,
+          fundingBodies: funding,
+          activeCollaborations: partners.length
+        });
+      }
+
+      // Also count research teams as collaborations
       const { count: teamsCount } = await supabase
         .from('research_teams')
         .select('id', { count: 'exact', head: true });
 
-      // Count unique collaboration requests
-      const { count: collabCount } = await supabase
-        .from('collaboration_requests')
-        .select('id', { count: 'exact', head: true });
-
-      setStats({
-        partnerInstitutions: 0, // No partner table yet
-        fundingBodies: 0, // No funding table yet
-        activeCollaborations: (teamsCount || 0) + (collabCount || 0)
-      });
+      setStats(prev => ({
+        ...prev,
+        activeCollaborations: prev.activeCollaborations + (teamsCount || 0)
+      }));
     } catch (error) {
       console.error('Error fetching collaboration stats:', error);
+    }
+  }
+
+  async function fetchTopPartners() {
+    try {
+      const { data } = await supabase
+        .from('collaboration_partnerships')
+        .select(`
+          id,
+          partner_institution_id,
+          collaboration_count,
+          joint_publications,
+          impact_score,
+          partner_institutions (
+            id,
+            name,
+            type,
+            country
+          )
+        `)
+        .eq('is_active', true)
+        .order('impact_score', { ascending: false })
+        .limit(5);
+
+      if (data) {
+        setTopPartners(data as Partnership[]);
+      }
+    } catch (error) {
+      console.error('Error fetching top partners:', error);
     }
   }
   const nodeTypeColors = {
@@ -84,8 +141,8 @@ export default function CollaborationNetwork() {
         <p className="text-sm text-muted-foreground mb-2">
           UDSM's global partnership ecosystem
         </p>
-        <p className="text-xs text-muted-foreground/70 mb-4 italic">
-          Note: Network visualization shows sample data. Add partner institutions to database to see real connections.
+        <p className="text-xs text-muted-foreground/70 mb-4">
+          Visual network shows sample layout. Partner data below is real from database.
         </p>
 
         <div className="relative w-full h-[600px] bg-gradient-to-br from-muted/20 to-transparent rounded-xl overflow-hidden">
@@ -230,8 +287,8 @@ export default function CollaborationNetwork() {
         <h3 className="font-display font-semibold text-lg text-foreground mb-2">
           Top Research Partners
         </h3>
-        <p className="text-xs text-muted-foreground/70 mb-4 italic">
-          Sample data shown. Create a partner_institutions table to track real partnerships.
+        <p className="text-xs text-muted-foreground/70 mb-4">
+          {topPartners.length > 0 ? 'Real partnership data from database' : 'No partnerships yet. Run the migration to add sample data.'}
         </p>
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -245,37 +302,41 @@ export default function CollaborationNetwork() {
               </tr>
             </thead>
             <tbody>
-              {[
-                { name: 'University of Cape Town', type: 'University', collabs: 67, pubs: 124, score: 8.9 },
-                { name: 'University of Nairobi', type: 'University', collabs: 78, pubs: 156, score: 8.7 },
-                { name: 'Oxford University', type: 'University', collabs: 52, pubs: 89, score: 9.2 },
-                { name: 'Gates Foundation', type: 'Funding', collabs: 29, pubs: 45, score: 8.5 },
-                { name: 'MIT', type: 'University', collabs: 45, pubs: 67, score: 9.0 },
-              ].map((partner, index) => (
-                <motion.tr
-                  key={partner.name}
-                  className="border-b border-border/50 hover:bg-muted/30 transition-colors"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.5 + index * 0.05 }}
-                >
-                  <td className="py-3 px-4 font-medium text-foreground">{partner.name}</td>
-                  <td className="py-3 px-4">
-                    <span className={`px-2 py-1 rounded-full text-xs ${
-                      partner.type === 'University' 
-                        ? 'bg-primary/20 text-primary' 
-                        : 'bg-secondary/20 text-secondary'
-                    }`}>
-                      {partner.type}
-                    </span>
+              {topPartners.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="py-8 text-center text-muted-foreground text-sm">
+                    No partner institutions found. Run the migration to create the table.
                   </td>
-                  <td className="py-3 px-4 text-muted-foreground">{partner.collabs}</td>
-                  <td className="py-3 px-4 text-muted-foreground">{partner.pubs}</td>
-                  <td className="py-3 px-4">
-                    <span className="font-semibold text-emerald">{partner.score}</span>
-                  </td>
-                </motion.tr>
-              ))}
+                </tr>
+              ) : (
+                topPartners.map((partnership, index) => (
+                  <motion.tr
+                    key={partnership.id}
+                    className="border-b border-border/50 hover:bg-muted/30 transition-colors"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.5 + index * 0.05 }}
+                  >
+                    <td className="py-3 px-4 font-medium text-foreground">
+                      {partnership.partner_institutions.name}
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className={`px-2 py-1 rounded-full text-xs capitalize ${
+                        partnership.partner_institutions.type === 'university' || partnership.partner_institutions.type === 'research_center'
+                          ? 'bg-primary/20 text-primary' 
+                          : 'bg-secondary/20 text-secondary'
+                      }`}>
+                        {partnership.partner_institutions.type.replace('_', ' ')}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-muted-foreground">{partnership.collaboration_count}</td>
+                    <td className="py-3 px-4 text-muted-foreground">{partnership.joint_publications}</td>
+                    <td className="py-3 px-4">
+                      <span className="font-semibold text-emerald">{partnership.impact_score}</span>
+                    </td>
+                  </motion.tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

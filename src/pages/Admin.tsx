@@ -20,6 +20,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
+import UserMenu from '@/components/auth/UserMenu';
+import NotificationsPanel from '@/components/notifications/NotificationsPanel';
 import AdminUserManagement from '@/components/admin/AdminUserManagement';
 import AdminAnalytics from '@/components/admin/AdminAnalytics';
 import AdminReports from '@/components/admin/AdminReports';
@@ -217,15 +219,19 @@ export default function Admin() {
               University-wide research analytics and user management
             </p>
           </div>
-          <Button 
-            onClick={handleRefresh} 
-            disabled={isRefreshing}
-            variant="outline"
-            className="gap-2"
-          >
-            <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-            Refresh Data
-          </Button>
+          <div className="flex items-center gap-3">
+            <Button 
+              onClick={handleRefresh} 
+              disabled={isRefreshing}
+              variant="outline"
+              className="gap-2"
+            >
+              <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+              Refresh Data
+            </Button>
+            <NotificationsPanel />
+            <UserMenu onOpenProfile={() => navigate('/dashboard')} />
+          </div>
         </div>
 
         {/* Stats Grid */}

@@ -10,6 +10,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useNavigate } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import UserMenu from '@/components/auth/UserMenu';
 import PublicationTimeline from '@/components/profile/PublicationTimeline';
 import CollaborationMap from '@/components/profile/CollaborationMap';
 import HIndexChart from '@/components/profile/HIndexChart';
@@ -130,6 +131,7 @@ export default function Dashboard() {
                 </div>
               </div>
               <NotificationsPanel />
+              <UserMenu onOpenProfile={() => setActiveTab('overview')} />
             </div>
           </div>
         </header>

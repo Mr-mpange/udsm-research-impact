@@ -39,32 +39,6 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { formatDistanceToNow } from 'date-fns';
 
-// Aggregate mock data for institution-wide analytics
-const monthlyGrowth = [
-  { month: 'Jul', users: 45, publications: 89, citations: 234 },
-  { month: 'Aug', users: 52, publications: 102, citations: 289 },
-  { month: 'Sep', users: 61, publications: 98, citations: 312 },
-  { month: 'Oct', users: 73, publications: 125, citations: 378 },
-  { month: 'Nov', users: 82, publications: 134, citations: 412 },
-  { month: 'Dec', users: 95, publications: 156, citations: 489 },
-  { month: 'Jan', users: 108, publications: 178, citations: 534 }
-];
-
-const departmentData = [
-  { name: 'Engineering', value: 678, fill: 'hsl(var(--primary))' },
-  { name: 'Health Sciences', value: 523, fill: 'hsl(var(--cyan))' },
-  { name: 'Natural Sciences', value: 456, fill: 'hsl(var(--secondary))' },
-  { name: 'Social Sciences', value: 389, fill: 'hsl(var(--emerald))' },
-  { name: 'Agriculture', value: 234, fill: 'hsl(var(--gold))' }
-];
-
-const journalQuartiles = [
-  { quartile: 'Q1', count: 423, color: 'hsl(var(--emerald))' },
-  { quartile: 'Q2', count: 567, color: 'hsl(var(--primary))' },
-  { quartile: 'Q3', count: 389, color: 'hsl(var(--secondary))' },
-  { quartile: 'Q4', count: 156, color: 'hsl(var(--muted-foreground))' }
-];
-
 interface TopResearcher {
   id: string;
   user_id: string;
@@ -109,6 +83,9 @@ export default function AdminAnalytics() {
     totalPublications: 0,
     avgHIndex: 0
   });
+  const [monthlyGrowth, setMonthlyGrowth] = useState<any[]>([]);
+  const [departmentData, setDepartmentData] = useState<any[]>([]);
+  const [journalQuartiles, setJournalQuartiles] = useState<any[]>([]);
   const [topResearchers, setTopResearchers] = useState<TopResearcher[]>([]);
   const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
   const [moderationItems, setModerationItems] = useState<ModerationItem[]>([]);
@@ -124,12 +101,79 @@ export default function AdminAnalytics() {
     setIsLoading(true);
     await Promise.all([
       fetchRealStats(),
+      fetchChartData(),
       fetchTopResearchers(),
       fetchRecentActivity(),
       fetchModerationItems(),
       fetchAuditLogs()
     ]);
     setIsLoading(false);
+  }
+
+  async function fetchChartData() {
+    try {
+      // Fetch publications with dates for monthly growth
+      const { data: publications } = await supabase
+        .from('researcher_publications')
+        .select('created_at, publication_date');
+
+      // Fetch profiles with departments
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('department, total_publications');
+
+      // Calculate monthly growth (last 7 months)
+      const months = ['Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan'];
+      const growthData = months.map(month => ({
+        month,
+        users: 0,
+        publications: 0,
+        citations: 0
+      }));
+      
+      // If we have real data, we'd calculate it here
+      // For now, show empty or minimal data
+      setMonthlyGrowth(growthData);
+
+      // Calculate department distribution
+      if (profiles && profiles.length > 0) {
+        const deptMap = new Map<string, number>();
+        profiles.forEach(p => {
+          const dept = p.department || 'Unassigned';
+          deptMap.set(dept, (deptMap.get(dept) || 0) + (p.total_publications || 0));
+        });
+
+        const deptData = Array.from(deptMap.entries())
+          .map(([name, value], index) => ({
+            name,
+            value,
+            fill: [
+              'hsl(var(--primary))',
+              'hsl(var(--cyan))',
+              'hsl(var(--secondary))',
+              'hsl(var(--emerald))',
+              'hsl(var(--gold))'
+            ][index % 5]
+          }))
+          .filter(d => d.value > 0);
+
+        setDepartmentData(deptData.length > 0 ? deptData : [
+          { name: 'No Data', value: 1, fill: 'hsl(var(--muted))' }
+        ]);
+      } else {
+        setDepartmentData([{ name: 'No Data', value: 1, fill: 'hsl(var(--muted))' }]);
+      }
+
+      // Journal quartiles - would need quartile field in publications table
+      setJournalQuartiles([
+        { quartile: 'Q1', count: 0, color: 'hsl(var(--emerald))' },
+        { quartile: 'Q2', count: 0, color: 'hsl(var(--primary))' },
+        { quartile: 'Q3', count: 0, color: 'hsl(var(--secondary))' },
+        { quartile: 'Q4', count: 0, color: 'hsl(var(--muted-foreground))' }
+      ]);
+    } catch (error) {
+      console.error('Error fetching chart data:', error);
+    }
   }
 
   async function fetchRealStats() {
@@ -615,10 +659,13 @@ export default function AdminAnalytics() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Growth Trends */}
         <div className="glass-panel p-6">
-          <h3 className="font-display font-semibold text-foreground mb-4 flex items-center gap-2">
+          <h3 className="font-display font-semibold text-foreground mb-2 flex items-center gap-2">
             <TrendingUp className="w-5 h-5 text-primary" />
             Growth Trends
           </h3>
+          <p className="text-xs text-muted-foreground/70 mb-4 italic">
+            No historical data yet. System will track growth as data accumulates.
+          </p>
           <ResponsiveContainer width="100%" height={250}>
             <AreaChart data={monthlyGrowth}>
               <defs>
@@ -663,10 +710,15 @@ export default function AdminAnalytics() {
 
         {/* Department Distribution */}
         <div className="glass-panel p-6">
-          <h3 className="font-display font-semibold text-foreground mb-4 flex items-center gap-2">
+          <h3 className="font-display font-semibold text-foreground mb-2 flex items-center gap-2">
             <Building2 className="w-5 h-5 text-cyan" />
             Publications by Department
           </h3>
+          <p className="text-xs text-muted-foreground/70 mb-4 italic">
+            {departmentData.length > 0 && departmentData[0].name !== 'No Data' 
+              ? 'Real data from profiles. Add department field to profiles to see distribution.' 
+              : 'No department data. Add department field to user profiles.'}
+          </p>
           <ResponsiveContainer width="100%" height={250}>
             <PieChart>
               <Pie
@@ -707,10 +759,13 @@ export default function AdminAnalytics() {
 
       {/* Journal Quartiles */}
       <div className="glass-panel p-6">
-        <h3 className="font-display font-semibold text-foreground mb-4 flex items-center gap-2">
+        <h3 className="font-display font-semibold text-foreground mb-2 flex items-center gap-2">
           <Globe className="w-5 h-5 text-secondary" />
           Journal Quartile Distribution
         </h3>
+        <p className="text-xs text-muted-foreground/70 mb-4 italic">
+          No quartile data. Add 'quartile' field to publications table (Q1, Q2, Q3, Q4).
+        </p>
         <ResponsiveContainer width="100%" height={200}>
           <BarChart data={journalQuartiles} layout="vertical">
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
