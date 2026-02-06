@@ -1,8 +1,41 @@
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { collaborationNetwork } from '@/data/researchData';
 import { Building2, Wallet, GraduationCap } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function CollaborationNetwork() {
+  const [stats, setStats] = useState({
+    partnerInstitutions: 0,
+    fundingBodies: 0,
+    activeCollaborations: 0
+  });
+
+  useEffect(() => {
+    fetchCollaborationStats();
+  }, []);
+
+  async function fetchCollaborationStats() {
+    try {
+      // Count research teams as collaborations
+      const { count: teamsCount } = await supabase
+        .from('research_teams')
+        .select('id', { count: 'exact', head: true });
+
+      // Count unique collaboration requests
+      const { count: collabCount } = await supabase
+        .from('collaboration_requests')
+        .select('id', { count: 'exact', head: true });
+
+      setStats({
+        partnerInstitutions: 0, // No partner table yet
+        fundingBodies: 0, // No funding table yet
+        activeCollaborations: (teamsCount || 0) + (collabCount || 0)
+      });
+    } catch (error) {
+      console.error('Error fetching collaboration stats:', error);
+    }
+  }
   const nodeTypeColors = {
     institution: '#3b82f6',
     partner: '#06b6d4',
@@ -48,8 +81,11 @@ export default function CollaborationNetwork() {
         <h3 className="font-display font-semibold text-lg text-foreground mb-1">
           Research Collaboration Network
         </h3>
-        <p className="text-sm text-muted-foreground mb-6">
+        <p className="text-sm text-muted-foreground mb-2">
           UDSM's global partnership ecosystem
+        </p>
+        <p className="text-xs text-muted-foreground/70 mb-4 italic">
+          Note: Network visualization shows sample data. Add partner institutions to database to see real connections.
         </p>
 
         <div className="relative w-full h-[600px] bg-gradient-to-br from-muted/20 to-transparent rounded-xl overflow-hidden">
@@ -162,9 +198,9 @@ export default function CollaborationNetwork() {
       {/* Partner Statistics */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {[
-          { label: 'Partner Institutions', count: 48, icon: Building2, color: 'primary' },
-          { label: 'Funding Bodies', count: 12, icon: Wallet, color: 'secondary' },
-          { label: 'Active Collaborations', count: 156, icon: GraduationCap, color: 'cyan' }
+          { label: 'Partner Institutions', count: stats.partnerInstitutions, icon: Building2, color: 'primary' },
+          { label: 'Funding Bodies', count: stats.fundingBodies, icon: Wallet, color: 'secondary' },
+          { label: 'Active Collaborations', count: stats.activeCollaborations, icon: GraduationCap, color: 'cyan' }
         ].map((stat, index) => (
           <motion.div
             key={stat.label}
@@ -191,9 +227,12 @@ export default function CollaborationNetwork() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.4 }}
       >
-        <h3 className="font-display font-semibold text-lg text-foreground mb-4">
+        <h3 className="font-display font-semibold text-lg text-foreground mb-2">
           Top Research Partners
         </h3>
+        <p className="text-xs text-muted-foreground/70 mb-4 italic">
+          Sample data shown. Create a partner_institutions table to track real partnerships.
+        </p>
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>

@@ -365,9 +365,8 @@ export default function AdminAnalytics() {
             <span className="text-sm text-muted-foreground">Active Researchers</span>
           </div>
           <p className="font-display text-3xl font-bold text-foreground">
-            {realStats.totalUsers || 156}
+            {realStats.totalUsers}
           </p>
-          <p className="text-xs text-emerald mt-1">+12% from last month</p>
         </motion.div>
 
         <motion.div
@@ -383,9 +382,8 @@ export default function AdminAnalytics() {
             <span className="text-sm text-muted-foreground">Total Publications</span>
           </div>
           <p className="font-display text-3xl font-bold text-foreground">
-            {realStats.totalPublications || 4523}
+            {realStats.totalPublications}
           </p>
-          <p className="text-xs text-emerald mt-1">+8% from last month</p>
         </motion.div>
 
         <motion.div
@@ -401,9 +399,8 @@ export default function AdminAnalytics() {
             <span className="text-sm text-muted-foreground">Avg. H-Index</span>
           </div>
           <p className="font-display text-3xl font-bold text-foreground">
-            {realStats.avgHIndex || 18.4}
+            {realStats.avgHIndex}
           </p>
-          <p className="text-xs text-emerald mt-1">+5% improvement</p>
         </motion.div>
       </div>
 

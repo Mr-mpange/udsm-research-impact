@@ -11,7 +11,8 @@ import {
   Building2,
   UserCog,
   Brain,
-  Network
+  Network,
+  RefreshCw
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -29,34 +30,123 @@ export default function Admin() {
   const { user, isLoading: authLoading } = useAuth();
   const { isAdmin, isLoading: roleLoading } = useUserRole();
   const navigate = useNavigate();
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [stats, setStats] = useState({
     totalUsers: 0,
     totalPublications: 0,
     totalChatSessions: 0,
-    totalDashboards: 0
+    totalDashboards: 0,
+    avgHIndex: 0,
+    totalCitations: 0,
+    activeResearchers: 0
   });
 
   useEffect(() => {
     async function fetchStats() {
       if (!isAdmin) return;
 
+      try {
+        console.log('Fetching admin stats from database...');
+        
+        // Fetch counts with no cache
+        const [usersRes, pubsRes, chatsRes, dashboardsRes] = await Promise.all([
+          supabase.from('profiles').select('id, h_index, total_citations, updated_at', { count: 'exact' }),
+          supabase.from('researcher_publications').select('id', { count: 'exact', head: true }),
+          supabase.from('chat_history').select('id', { count: 'exact', head: true }),
+          supabase.from('saved_dashboards').select('id', { count: 'exact', head: true })
+        ]);
+
+        console.log('Database results:', {
+          users: usersRes.count,
+          publications: pubsRes.count,
+          chats: chatsRes.count,
+          dashboards: dashboardsRes.count
+        });
+
+        // Calculate average H-Index and total citations
+        const profiles = usersRes.data || [];
+        const avgHIndex = profiles.length > 0
+          ? profiles.reduce((sum, p) => sum + (p.h_index || 0), 0) / profiles.length
+          : 0;
+        
+        const totalCitations = profiles.reduce((sum, p) => sum + (p.total_citations || 0), 0);
+        
+        // Count active researchers (updated in last 30 days)
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        const activeResearchers = profiles.filter(p => 
+          p.updated_at && new Date(p.updated_at) > thirtyDaysAgo
+        ).length;
+
+        setStats({
+          totalUsers: usersRes.count || 0,
+          totalPublications: pubsRes.count || 0,
+          totalChatSessions: chatsRes.count || 0,
+          totalDashboards: dashboardsRes.count || 0,
+          avgHIndex: Math.round(avgHIndex * 10) / 10,
+          totalCitations: totalCitations,
+          activeResearchers: activeResearchers
+        });
+        
+        console.log('Stats updated:', {
+          totalPublications: pubsRes.count || 0,
+          avgHIndex: Math.round(avgHIndex * 10) / 10,
+          totalCitations: totalCitations
+        });
+      } catch (error) {
+        console.error('Error fetching admin stats:', error);
+      }
+    }
+
+    fetchStats();
+  }, [isAdmin]);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      console.log('Manual refresh triggered...');
+      
       const [usersRes, pubsRes, chatsRes, dashboardsRes] = await Promise.all([
-        supabase.from('profiles').select('id', { count: 'exact', head: true }),
+        supabase.from('profiles').select('id, h_index, total_citations, updated_at', { count: 'exact' }),
         supabase.from('researcher_publications').select('id', { count: 'exact', head: true }),
         supabase.from('chat_history').select('id', { count: 'exact', head: true }),
         supabase.from('saved_dashboards').select('id', { count: 'exact', head: true })
       ]);
 
+      const profiles = usersRes.data || [];
+      const avgHIndex = profiles.length > 0
+        ? profiles.reduce((sum, p) => sum + (p.h_index || 0), 0) / profiles.length
+        : 0;
+      
+      const totalCitations = profiles.reduce((sum, p) => sum + (p.total_citations || 0), 0);
+      
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      const activeResearchers = profiles.filter(p => 
+        p.updated_at && new Date(p.updated_at) > thirtyDaysAgo
+      ).length;
+
       setStats({
         totalUsers: usersRes.count || 0,
         totalPublications: pubsRes.count || 0,
         totalChatSessions: chatsRes.count || 0,
-        totalDashboards: dashboardsRes.count || 0
+        totalDashboards: dashboardsRes.count || 0,
+        avgHIndex: Math.round(avgHIndex * 10) / 10,
+        totalCitations: totalCitations,
+        activeResearchers: activeResearchers
       });
+      
+      console.log('Refreshed stats:', {
+        publications: pubsRes.count,
+        citations: totalCitations,
+        hIndex: Math.round(avgHIndex * 10) / 10
+      });
+    } catch (error) {
+      console.error('Error refreshing stats:', error);
+    } finally {
+      setIsRefreshing(false);
     }
-
-    fetchStats();
-  }, [isAdmin]);
+  };
 
   if (authLoading || roleLoading) {
     return (
@@ -101,10 +191,10 @@ export default function Admin() {
   }
 
   const statCards = [
-    { label: 'Total Researchers', value: stats.totalUsers, icon: Users, color: 'primary' },
-    { label: 'Publications', value: stats.totalPublications, icon: BookOpen, color: 'cyan' },
-    { label: 'AI Chat Sessions', value: stats.totalChatSessions, icon: FileText, color: 'secondary' },
-    { label: 'Saved Dashboards', value: stats.totalDashboards, icon: BarChart3, color: 'emerald' }
+    { label: 'Active Researchers', value: stats.activeResearchers, icon: Users, color: 'primary', total: stats.totalUsers },
+    { label: 'Total Publications', value: stats.totalPublications, icon: BookOpen, color: 'cyan' },
+    { label: 'Avg. H-Index', value: stats.avgHIndex, icon: TrendingUp, color: 'secondary' },
+    { label: 'Total Citations', value: stats.totalCitations.toLocaleString(), icon: BarChart3, color: 'emerald' }
   ];
 
   return (
@@ -117,14 +207,25 @@ export default function Admin() {
 
       <div className="relative container mx-auto px-4 py-8">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="font-display text-3xl font-bold text-foreground flex items-center gap-3">
-            <Shield className="w-8 h-8 text-primary" />
-            Admin Dashboard
-          </h1>
-          <p className="text-muted-foreground">
-            University-wide research analytics and user management
-          </p>
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <h1 className="font-display text-3xl font-bold text-foreground flex items-center gap-3">
+              <Shield className="w-8 h-8 text-primary" />
+              Admin Dashboard
+            </h1>
+            <p className="text-muted-foreground">
+              University-wide research analytics and user management
+            </p>
+          </div>
+          <Button 
+            onClick={handleRefresh} 
+            disabled={isRefreshing}
+            variant="outline"
+            className="gap-2"
+          >
+            <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+            Refresh Data
+          </Button>
         </div>
 
         {/* Stats Grid */}
@@ -145,7 +246,10 @@ export default function Admin() {
                   <p className="font-display font-bold text-2xl text-foreground">
                     {stat.value}
                   </p>
-                  <p className="text-xs text-muted-foreground">{stat.label}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {stat.label}
+                    {stat.total && ` (${stat.total} total)`}
+                  </p>
                 </div>
               </div>
             </motion.div>
