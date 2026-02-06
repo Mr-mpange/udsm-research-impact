@@ -3,23 +3,41 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!-- TODO: Set the document title to the name of your application -->
-    <title>Lovable App</title>
-    <meta name="description" content="Lovable Generated Project" />
-    <meta name="author" content="Lovable" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>UDSM Research Impact Platform</title>
+    <meta name="description" content="Global Research Intelligence Platform for the University of Dar es Salaam - Track research impact, citations, and collaborations worldwide" />
+    <meta name="author" content="University of Dar es Salaam" />
+    <meta name="keywords" content="UDSM, research, citations, impact, analytics, Tanzania, university, academic" />
 
-    <!-- TODO: Update og:title to match your application name -->
-    <meta property="og:title" content="Lovable App" />
-    <meta property="og:description" content="Lovable Generated Project" />
+    <!-- Open Graph / Facebook -->
+    <meta property="og:title" content="UDSM Research Impact Platform" />
+    <meta property="og:description" content="Visualize and track UDSM's global research impact with real-time analytics and AI-powered insights" />
     <meta property="og:type" content="website" />
-    <meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    <meta property="og:url" content="https://Mr-mpange.github.io/udsm-research-impact/" />
+    <meta property="og:image" content="https://Mr-mpange.github.io/udsm-research-impact/og-image.png" />
 
+    <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@Lovable" />
-    <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    <meta name="twitter:title" content="UDSM Research Impact Platform" />
+    <meta name="twitter:description" content="Global Research Intelligence Platform for UDSM" />
+    <meta name="twitter:image" content="https://Mr-mpange.github.io/udsm-research-impact/og-image.png" />
   </head>
 
   <body>
+    <!-- Single Page Apps for GitHub Pages -->
+    <script>
+      (function(l) {
+        if (l.search[1] === '/' ) {
+          var decoded = l.search.slice(1).split('&').map(function(s) { 
+            return s.replace(/~and~/g, '&')
+          }).join('?');
+          window.history.replaceState(null, null,
+            l.pathname.slice(0, -1) + decoded + l.hash
+          );
+        }
+      }(window.location))
+    </script>
+    
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

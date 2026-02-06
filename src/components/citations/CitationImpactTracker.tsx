@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { TrendingUp, TrendingDown, Minus, BarChart3, RefreshCw, Calendar, Award } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, BarChart3, RefreshCw, Calendar, Award, Download, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { useCitationTracker, type PublicationWithHistory } from '@/hooks/useCitationTracker';
 import { format, parseISO } from 'date-fns';
+import { useToast } from '@/hooks/use-toast';
 
 const trendIcons = {
   up: TrendingUp,
@@ -82,11 +83,16 @@ export default function CitationImpactTracker() {
     publications, 
     isLoading, 
     fetchCitationHistory, 
-    recordAllSnapshots, 
+    recordAllSnapshots,
+    updateCitationsFromAPIs,
+    updateSinglePublication,
     getAggregateStats 
   } = useCitationTracker();
   const [isRecording, setIsRecording] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [updatingPubId, setUpdatingPubId] = useState<string | null>(null);
   const [selectedPub, setSelectedPub] = useState<PublicationWithHistory | null>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     fetchCitationHistory();
@@ -96,6 +102,44 @@ export default function CitationImpactTracker() {
     setIsRecording(true);
     await recordAllSnapshots();
     setIsRecording(false);
+  };
+
+  const handleAutoUpdate = async () => {
+    setIsUpdating(true);
+    const result = await updateCitationsFromAPIs();
+    setIsUpdating(false);
+
+    if (result.error) {
+      toast({
+        title: 'Update Failed',
+        description: result.error.message,
+        variant: 'destructive',
+      });
+    } else {
+      toast({
+        title: 'Citations Updated',
+        description: `Successfully updated ${result.updated} publication${result.updated !== 1 ? 's' : ''} from external APIs`,
+      });
+    }
+  };
+
+  const handleUpdateSingle = async (pubId: string) => {
+    setUpdatingPubId(pubId);
+    const result = await updateSinglePublication(pubId);
+    setUpdatingPubId(null);
+
+    if (result.error) {
+      toast({
+        title: 'Update Failed',
+        description: result.error.message,
+        variant: 'destructive',
+      });
+    } else {
+      toast({
+        title: 'Citation Updated',
+        description: `Updated to ${result.citationData?.count} citations from ${result.citationData?.source}`,
+      });
+    }
   };
 
   const stats = getAggregateStats();
@@ -108,10 +152,24 @@ export default function CitationImpactTracker() {
           <h2 className="text-xl font-semibold text-foreground">Citation Impact Tracker</h2>
           <p className="text-sm text-muted-foreground">Monitor your research impact over time</p>
         </div>
-        <Button onClick={handleRecordSnapshots} disabled={isRecording}>
-          <RefreshCw className={`w-4 h-4 mr-2 ${isRecording ? 'animate-spin' : ''}`} />
-          {isRecording ? 'Recording...' : 'Record Snapshot'}
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            onClick={handleAutoUpdate} 
+            disabled={isUpdating || publications.length === 0}
+            variant="default"
+          >
+            <Zap className={`w-4 h-4 mr-2 ${isUpdating ? 'animate-pulse' : ''}`} />
+            {isUpdating ? 'Updating...' : 'Auto-Update All'}
+          </Button>
+          <Button 
+            onClick={handleRecordSnapshots} 
+            disabled={isRecording}
+            variant="outline"
+          >
+            <Download className={`w-4 h-4 mr-2 ${isRecording ? 'animate-bounce' : ''}`} />
+            {isRecording ? 'Recording...' : 'Snapshot'}
+          </Button>
+        </div>
       </div>
 
       {/* Aggregate Stats */}
@@ -199,11 +257,13 @@ export default function CitationImpactTracker() {
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: index * 0.03 }}
-                    className="p-4 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer"
-                    onClick={() => setSelectedPub(selectedPub?.id === pub.id ? null : pub)}
+                    className="p-4 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
                   >
                     <div className="flex items-start justify-between gap-4 mb-2">
-                      <div className="flex-1 min-w-0">
+                      <div 
+                        className="flex-1 min-w-0 cursor-pointer"
+                        onClick={() => setSelectedPub(selectedPub?.id === pub.id ? null : pub)}
+                      >
                         <h4 className="font-medium text-foreground line-clamp-1">{pub.title}</h4>
                         <div className="flex items-center gap-2 mt-1">
                           {pub.journal && (
@@ -215,6 +275,15 @@ export default function CitationImpactTracker() {
                         </div>
                       </div>
                       <div className="flex items-center gap-3 flex-shrink-0">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleUpdateSingle(pub.id)}
+                          disabled={updatingPubId === pub.id}
+                          className="h-8 px-2"
+                        >
+                          <RefreshCw className={`w-3 h-3 ${updatingPubId === pub.id ? 'animate-spin' : ''}`} />
+                        </Button>
                         <div className="text-right">
                           <p className="text-lg font-bold text-foreground">
                             {pub.current_citations}
@@ -259,11 +328,12 @@ export default function CitationImpactTracker() {
 
       {/* Tips */}
       <div className="glass-panel p-4 border-primary/20">
-        <h4 className="text-sm font-medium text-foreground mb-2">💡 Tracking Tips</h4>
+        <h4 className="text-sm font-medium text-foreground mb-2">💡 Auto-Update Features</h4>
         <ul className="text-sm text-muted-foreground space-y-1">
-          <li>• Record snapshots regularly (weekly/monthly) to track trends accurately</li>
-          <li>• Sync your ORCID profile to keep publication data up to date</li>
-          <li>• Publications with high growth rates may indicate emerging research impact</li>
+          <li>• Click "Auto-Update All" to fetch latest citations from CrossRef and Semantic Scholar</li>
+          <li>• Use the refresh icon on individual publications for targeted updates</li>
+          <li>• Citations are automatically sourced from DOI (CrossRef) or title search (Semantic Scholar)</li>
+          <li>• Snapshots are recorded automatically when citations are updated</li>
         </ul>
       </div>
     </div>

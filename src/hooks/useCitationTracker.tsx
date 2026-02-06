@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { fetchCitationCount, batchFetchCitations, type PublicationIdentifiers } from '@/services/citationService';
 
 export interface CitationSnapshot {
   id: string;
@@ -176,6 +177,124 @@ export function useCitationTracker() {
     return { error: null };
   };
 
+  const updateCitationsFromAPIs = async () => {
+    if (!user) return { error: new Error('Not authenticated'), updated: 0 };
+
+    // Fetch publications with DOI and title
+    const { data: pubs, error: fetchError } = await supabase
+      .from('researcher_publications')
+      .select('id, title, doi, year, co_authors, citations')
+      .eq('user_id', user.id);
+
+    if (fetchError) {
+      return { error: fetchError, updated: 0 };
+    }
+
+    if (!pubs || pubs.length === 0) {
+      return { error: null, updated: 0 };
+    }
+
+    // Prepare identifiers for batch fetch
+    const identifiers: PublicationIdentifiers[] = pubs.map(p => ({
+      doi: p.doi || undefined,
+      title: p.title,
+      year: p.year || undefined,
+    }));
+
+    // Fetch citations from external APIs
+    const citationResults = await batchFetchCitations(identifiers);
+
+    // Update publications with new citation counts
+    const updates: Array<{ id: string; citations: number }> = [];
+    const snapshots: Array<{ publication_id: string; citations: number; snapshot_date: string }> = [];
+    const today = new Date().toISOString().split('T')[0];
+
+    pubs.forEach((pub) => {
+      const key = pub.doi || pub.title;
+      const citationData = citationResults.get(key);
+
+      if (citationData && citationData.count !== pub.citations) {
+        updates.push({
+          id: pub.id,
+          citations: citationData.count,
+        });
+
+        snapshots.push({
+          publication_id: pub.id,
+          citations: citationData.count,
+          snapshot_date: today,
+        });
+      }
+    });
+
+    // Batch update
+    if (updates.length > 0) {
+      for (const update of updates) {
+        await supabase
+          .from('researcher_publications')
+          .update({ citations: update.citations })
+          .eq('id', update.id);
+      }
+
+      // Record snapshots
+      await supabase
+        .from('citation_snapshots')
+        .upsert(snapshots, { onConflict: 'publication_id,snapshot_date' });
+
+      await fetchCitationHistory();
+    }
+
+    return { error: null, updated: updates.length };
+  };
+
+  const updateSinglePublication = async (publicationId: string) => {
+    if (!user) return { error: new Error('Not authenticated') };
+
+    const { data: pub, error: fetchError } = await supabase
+      .from('researcher_publications')
+      .select('id, title, doi, year, citations')
+      .eq('id', publicationId)
+      .eq('user_id', user.id)
+      .single();
+
+    if (fetchError || !pub) {
+      return { error: fetchError || new Error('Publication not found') };
+    }
+
+    const citationData = await fetchCitationCount({
+      doi: pub.doi || undefined,
+      title: pub.title,
+      year: pub.year || undefined,
+    });
+
+    if (!citationData) {
+      return { error: new Error('Could not fetch citation data from external APIs') };
+    }
+
+    // Update publication
+    const { error: updateError } = await supabase
+      .from('researcher_publications')
+      .update({ citations: citationData.count })
+      .eq('id', publicationId);
+
+    if (updateError) {
+      return { error: updateError };
+    }
+
+    // Record snapshot
+    const today = new Date().toISOString().split('T')[0];
+    await supabase
+      .from('citation_snapshots')
+      .upsert({
+        publication_id: publicationId,
+        citations: citationData.count,
+        snapshot_date: today,
+      }, { onConflict: 'publication_id,snapshot_date' });
+
+    await fetchCitationHistory();
+    return { error: null, citationData };
+  };
+
   const getAggregateStats = useCallback(() => {
     const totalCitations = publications.reduce((acc, p) => acc + p.current_citations, 0);
     const avgGrowth = publications.length > 0
@@ -202,6 +321,8 @@ export function useCitationTracker() {
     fetchCitationHistory,
     recordSnapshot,
     recordAllSnapshots,
+    updateCitationsFromAPIs,
+    updateSinglePublication,
     getAggregateStats,
   };
 }
