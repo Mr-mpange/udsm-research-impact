@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -19,6 +21,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { signIn, signUp } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,6 +47,25 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
       setEmail('');
       setPassword('');
       setName('');
+      
+      // Check user role and redirect accordingly
+      setTimeout(async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          // Check if user has admin role
+          const { data: roles } = await supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', user.id);
+          
+          const isAdmin = roles?.some(r => r.role === 'admin');
+          
+          // Redirect admin users to admin dashboard, others to regular dashboard
+          navigate(isAdmin ? '/admin' : '/dashboard');
+        } else {
+          navigate('/dashboard');
+        }
+      }, 100);
     } catch (error: any) {
       toast({
         variant: "destructive",

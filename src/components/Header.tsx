@@ -18,10 +18,14 @@ interface HeaderProps {
 
 const navItems = [
   { id: 'globe', label: 'Global Impact', icon: Globe },
-  { id: 'dashboard', label: 'Analytics', icon: BarChart3 },
-  { id: 'network', label: 'Collaboration', icon: Network },
-  { id: 'predictions', label: 'Predictions', icon: Brain },
   { id: 'research-network', label: 'Research Network', icon: BookOpen, isRoute: true, route: '/research' },
+];
+
+// These tabs are shown on the home page for demo/public viewing
+const publicDemoTabs = [
+  { id: 'dashboard', label: 'Analytics Demo', icon: BarChart3 },
+  { id: 'network', label: 'Collaboration Demo', icon: Network },
+  { id: 'predictions', label: 'Predictions Demo', icon: Brain },
 ];
 
 const userNavItems = [
@@ -82,6 +86,25 @@ export default function Header({ activeTab, setActiveTab, onOpenAuth, onOpenProf
               </motion.button>
             ))}
             
+            {/* Demo tabs - only show if not authenticated */}
+            {!user && publicDemoTabs.map((item, index) => (
+              <motion.button
+                key={item.id}
+                onClick={() => setActiveTab(item.id)}
+                className={`nav-link flex items-center gap-2 rounded-lg ${
+                  activeTab === item.id ? 'nav-link-active bg-muted' : ''
+                }`}
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: (navItems.length + index) * 0.1 }}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <item.icon className="w-4 h-4" />
+                <span className="text-sm font-medium">{item.label}</span>
+              </motion.button>
+            ))}
+            
             {/* User Research Tab - only for authenticated users */}
             {user && (
               <motion.button
@@ -94,7 +117,7 @@ export default function Header({ activeTab, setActiveTab, onOpenAuth, onOpenProf
                 whileTap={{ scale: 0.98 }}
               >
                 <FileText className="w-4 h-4" />
-                <span className="text-sm font-medium">My Research</span>
+                <span className="text-sm font-medium">My Dashboard</span>
               </motion.button>
             )}
           </nav>
@@ -218,7 +241,26 @@ export default function Header({ activeTab, setActiveTab, onOpenAuth, onOpenProf
                 </button>
               ))}
               
-              {/* My Research - for authenticated users */}
+              {/* Demo tabs - only for non-authenticated users */}
+              {!user && publicDemoTabs.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => {
+                    setActiveTab(item.id);
+                    setMobileMenuOpen(false);
+                  }}
+                  className={`flex items-center gap-2 p-3 rounded-lg transition-colors ${
+                    activeTab === item.id 
+                      ? 'bg-primary text-primary-foreground' 
+                      : 'bg-muted text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  <item.icon className="w-4 h-4" />
+                  <span className="text-sm font-medium">{item.label}</span>
+                </button>
+              ))}
+              
+              {/* My Dashboard - for authenticated users */}
               {user && (
                 <button
                   onClick={() => {
@@ -228,7 +270,7 @@ export default function Header({ activeTab, setActiveTab, onOpenAuth, onOpenProf
                   className="flex items-center gap-2 p-3 rounded-lg transition-colors bg-primary/20 text-primary hover:bg-primary/30"
                 >
                   <FileText className="w-4 h-4" />
-                  <span className="text-sm font-medium">My Research</span>
+                  <span className="text-sm font-medium">My Dashboard</span>
                 </button>
               )}
               

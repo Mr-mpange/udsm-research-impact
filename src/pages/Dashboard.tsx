@@ -3,10 +3,11 @@ import { motion } from 'framer-motion';
 import { 
   Award, BookOpen, Users, TrendingUp, Building2, 
   ArrowLeft, Search, BarChart3, Link2, FileText,
-  UserPlus, Bell
+  UserPlus, Bell, Shield
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
+import { useUserRole } from '@/hooks/useUserRole';
 import { useNavigate } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import PublicationTimeline from '@/components/profile/PublicationTimeline';
@@ -32,6 +33,7 @@ const tabs = [
 
 export default function Dashboard() {
   const { user, profile, isLoading } = useAuth();
+  const { isAdmin } = useUserRole();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<TabId>('overview');
 
@@ -99,6 +101,19 @@ export default function Dashboard() {
             </div>
 
             <div className="flex items-center gap-3">
+              {/* Admin Access Button */}
+              {isAdmin && (
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => navigate('/admin')}
+                  className="gap-2"
+                >
+                  <Shield className="w-4 h-4" />
+                  Admin Panel
+                </Button>
+              )}
+              
               {/* Quick Stats */}
               <div className="hidden lg:flex items-center gap-4 mr-4">
                 <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary/10">
