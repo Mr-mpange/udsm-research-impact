@@ -89,20 +89,15 @@ export default function Index() {
                   </motion.div>
                 </div>
 
-                {/* Quick Stats - Real data for authenticated users, demo for visitors */}
-                <div className="mb-4">
-                  {showRealData ? (
+                {/* Quick Stats - Real data for authenticated users */}
+                {showRealData && (
+                  <div className="mb-4">
                     <Badge variant="secondary" className="mb-2">
                       <Database className="w-3 h-3 mr-1" />
                       Live Institutional Data
                     </Badge>
-                  ) : (
-                    <Badge variant="outline" className="mb-2">
-                      <Sparkles className="w-3 h-3 mr-1" />
-                      Demo Data • Sign in for real stats
-                    </Badge>
-                  )}
-                </div>
+                  </div>
+                )}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                   {(showRealData ? [
                     { label: 'Total Publications', value: realStats.totalPublications.toLocaleString(), icon: BookOpen, color: 'primary' },

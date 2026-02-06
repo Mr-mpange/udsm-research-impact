@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { BookOpen, ExternalLink, Loader2 } from 'lucide-react';
+import { BookOpen, Loader2 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import PublicationUpload from '@/components/publications/PublicationUpload';
+import PublicationCard from '@/components/publications/PublicationCard';
 
 interface Publication {
   id: string;
@@ -15,6 +15,9 @@ interface Publication {
   quartile: string | null;
   doi: string | null;
   abstract: string | null;
+  pdf_url: string | null;
+  keywords: string[] | null;
+  co_authors: string[] | null;
 }
 
 export default function PublicationTimeline() {
@@ -29,7 +32,7 @@ export default function PublicationTimeline() {
     setIsLoading(true);
     const { data, error } = await supabase
       .from('researcher_publications')
-      .select('id, title, journal, year, citations, quartile, doi, abstract')
+      .select('id, title, journal, year, citations, quartile, doi, abstract, pdf_url, keywords, co_authors')
       .eq('user_id', user.id)
       .order('year', { ascending: false });
 
@@ -63,15 +66,6 @@ export default function PublicationTimeline() {
   useEffect(() => {
     fetchPublications();
   }, [user]);
-
-  const getQuartileColor = (q: string | null) => {
-    switch (q) {
-      case 'Q1': return 'bg-emerald/20 text-emerald border-emerald/30';
-      case 'Q2': return 'bg-primary/20 text-primary border-primary/30';
-      case 'Q3': return 'bg-secondary/20 text-secondary border-secondary/30';
-      default: return 'bg-muted text-muted-foreground border-border';
-    }
-  };
 
   if (isLoading) {
     return (
@@ -155,47 +149,12 @@ export default function PublicationTimeline() {
           </div>
         ) : (
           publications.map((pub, index) => (
-            <motion.div
-              key={pub.id}
-              className="glass-panel p-4 hover:bg-muted/50 transition-colors"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.05 }}
-            >
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center flex-shrink-0 mt-1">
-                  <BookOpen className="w-4 h-4" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h4 className="font-medium text-foreground text-sm line-clamp-2">
-                    {pub.title}
-                  </h4>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {pub.journal || 'Unknown journal'} • {pub.year || 'Year unknown'}
-                  </p>
-                  <div className="flex items-center gap-3 mt-2">
-                    {pub.quartile && (
-                      <span className={`text-xs px-2 py-0.5 rounded-full border ${getQuartileColor(pub.quartile)}`}>
-                        {pub.quartile}
-                      </span>
-                    )}
-                    <span className="text-xs text-muted-foreground">
-                      {pub.citations || 0} citations
-                    </span>
-                    {pub.doi && (
-                      <a
-                        href={`https://doi.org/${pub.doi}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs text-primary hover:underline flex items-center gap-1"
-                      >
-                        DOI <ExternalLink className="w-3 h-3" />
-                      </a>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </motion.div>
+            <PublicationCard 
+              key={pub.id} 
+              publication={pub} 
+              index={index} 
+              onUpdate={fetchPublications}
+            />
           ))
         )}
       </div>
