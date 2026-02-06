@@ -10,7 +10,8 @@ import {
   BookOpen,
   Building2,
   UserCog,
-  ArrowLeft
+  Brain,
+  Network
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -21,6 +22,8 @@ import { useNavigate } from 'react-router-dom';
 import AdminUserManagement from '@/components/admin/AdminUserManagement';
 import AdminAnalytics from '@/components/admin/AdminAnalytics';
 import AdminReports from '@/components/admin/AdminReports';
+import CollaborationNetwork from '@/components/CollaborationNetwork';
+import PredictiveAnalytics from '@/components/PredictiveAnalytics';
 
 export default function Admin() {
   const { user, isLoading: authLoading } = useAuth();
@@ -114,19 +117,14 @@ export default function Admin() {
 
       <div className="relative container mx-auto px-4 py-8">
         {/* Header */}
-        <div className="flex items-center gap-4 mb-8">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-          <div>
-            <h1 className="font-display text-3xl font-bold text-foreground flex items-center gap-3">
-              <Shield className="w-8 h-8 text-primary" />
-              Admin Dashboard
-            </h1>
-            <p className="text-muted-foreground">
-              University-wide research analytics and user management
-            </p>
-          </div>
+        <div className="mb-8">
+          <h1 className="font-display text-3xl font-bold text-foreground flex items-center gap-3">
+            <Shield className="w-8 h-8 text-primary" />
+            Admin Dashboard
+          </h1>
+          <p className="text-muted-foreground">
+            University-wide research analytics and user management
+          </p>
         </div>
 
         {/* Stats Grid */}
@@ -161,6 +159,14 @@ export default function Admin() {
               <TrendingUp className="w-4 h-4" />
               Analytics
             </TabsTrigger>
+            <TabsTrigger value="collaboration" className="gap-2">
+              <Network className="w-4 h-4" />
+              Collaboration
+            </TabsTrigger>
+            <TabsTrigger value="ai-predictions" className="gap-2">
+              <Brain className="w-4 h-4" />
+              AI Predictions
+            </TabsTrigger>
             <TabsTrigger value="users" className="gap-2">
               <UserCog className="w-4 h-4" />
               User Management
@@ -173,6 +179,26 @@ export default function Admin() {
 
           <TabsContent value="analytics">
             <AdminAnalytics />
+          </TabsContent>
+
+          <TabsContent value="collaboration">
+            <div className="glass-panel p-6">
+              <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+                <Network className="w-5 h-5" />
+                University-wide Collaboration Network
+              </h3>
+              <CollaborationNetwork />
+            </div>
+          </TabsContent>
+
+          <TabsContent value="ai-predictions">
+            <div className="glass-panel p-6">
+              <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+                <Brain className="w-5 h-5" />
+                Predictive Analytics & Insights
+              </h3>
+              <PredictiveAnalytics />
+            </div>
           </TabsContent>
 
           <TabsContent value="users">

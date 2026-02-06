@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Award, BookOpen, Users, TrendingUp, Building2, 
-  ArrowLeft, Search, BarChart3, Link2, FileText,
-  UserPlus, Bell, Shield
+  Search, BarChart3, Link2, FileText,
+  UserPlus, Bell, Shield, Brain, Network
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
@@ -18,16 +18,21 @@ import PublicationSearch from '@/components/publications/PublicationSearch';
 import ResearchTeamsPanel from '@/components/teams/ResearchTeamsPanel';
 import CitationImpactTracker from '@/components/citations/CitationImpactTracker';
 import NotificationsPanel from '@/components/notifications/NotificationsPanel';
+import AnalyticsCharts from '@/components/AnalyticsCharts';
+import CollaborationNetwork from '@/components/CollaborationNetwork';
+import PredictiveAnalytics from '@/components/PredictiveAnalytics';
 
-type TabId = 'overview' | 'publications' | 'search' | 'teams' | 'citations' | 'collaborations' | 'orcid';
+type TabId = 'overview' | 'analytics' | 'collaboration' | 'ai-predictions' | 'publications' | 'search' | 'teams' | 'citations' | 'collaborations' | 'orcid';
 
 const tabs = [
   { id: 'overview' as TabId, label: 'Overview', icon: BarChart3 },
+  { id: 'analytics' as TabId, label: 'Analytics', icon: TrendingUp },
+  { id: 'collaboration' as TabId, label: 'Collaboration', icon: Network },
+  { id: 'ai-predictions' as TabId, label: 'AI Predictions', icon: Brain },
   { id: 'publications' as TabId, label: 'Publications', icon: BookOpen },
   { id: 'search' as TabId, label: 'Search', icon: Search },
   { id: 'teams' as TabId, label: 'Teams', icon: Users },
-  { id: 'citations' as TabId, label: 'Impact', icon: TrendingUp },
-  { id: 'collaborations' as TabId, label: 'Network', icon: UserPlus },
+  { id: 'citations' as TabId, label: 'Impact', icon: Award },
   { id: 'orcid' as TabId, label: 'ORCID', icon: Link2 },
 ];
 
@@ -78,21 +83,17 @@ export default function Dashboard() {
         {/* Header */}
         <header className="sticky top-0 z-50 glass-panel m-4 px-6 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
-                <ArrowLeft className="w-5 h-5" />
-              </Button>
-              <div className="flex items-center gap-3">
-                <Avatar className="h-10 w-10">
-                  <AvatarImage src={profile.avatar_url || undefined} />
-                  <AvatarFallback className="bg-gradient-to-br from-primary to-cyan text-primary-foreground">
-                    {initials}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <h1 className="font-display font-bold text-lg text-foreground">
-                    {profile.display_name || 'Researcher Dashboard'}
-                  </h1>
+            <div className="flex items-center gap-3">
+              <Avatar className="h-10 w-10">
+                <AvatarImage src={profile.avatar_url || undefined} />
+                <AvatarFallback className="bg-gradient-to-br from-primary to-cyan text-primary-foreground">
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <h1 className="font-display font-bold text-lg text-foreground">
+                  {profile.display_name || 'Researcher Dashboard'}
+                </h1>
                   <p className="text-xs text-muted-foreground">
                     {profile.institution || 'Your research hub'}
                   </p>
@@ -239,6 +240,36 @@ export default function Dashboard() {
                         {profile.bio || 'No biography added yet. Update your profile to add one.'}
                       </p>
                     </div>
+                  </div>
+                )}
+
+                {activeTab === 'analytics' && (
+                  <div className="glass-panel p-6">
+                    <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+                      <TrendingUp className="w-5 h-5" />
+                      Research Analytics
+                    </h3>
+                    <AnalyticsCharts />
+                  </div>
+                )}
+                
+                {activeTab === 'collaboration' && (
+                  <div className="glass-panel p-6">
+                    <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+                      <Network className="w-5 h-5" />
+                      Collaboration Network
+                    </h3>
+                    <CollaborationNetwork />
+                  </div>
+                )}
+                
+                {activeTab === 'ai-predictions' && (
+                  <div className="glass-panel p-6">
+                    <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+                      <Brain className="w-5 h-5" />
+                      AI-Powered Predictions
+                    </h3>
+                    <PredictiveAnalytics />
                   </div>
                 )}
 
