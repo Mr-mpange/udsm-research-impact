@@ -6,6 +6,7 @@ import {
   UserPlus, Bell, Shield, Brain, Network
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useNavigate } from 'react-router-dom';
@@ -94,10 +95,9 @@ export default function Dashboard() {
                 <h1 className="font-display font-bold text-lg text-foreground">
                   {profile.display_name || 'Researcher Dashboard'}
                 </h1>
-                  <p className="text-xs text-muted-foreground">
-                    {profile.institution || 'Your research hub'}
-                  </p>
-                </div>
+                <p className="text-xs text-muted-foreground">
+                  {profile.institution || 'Your research hub'}
+                </p>
               </div>
             </div>
 
@@ -137,39 +137,25 @@ export default function Dashboard() {
 
         {/* Main Content */}
         <div className="container mx-auto px-4 py-6">
-          <div className="flex flex-col lg:flex-row gap-6">
-            {/* Sidebar Navigation */}
-            <aside className="lg:w-64 flex-shrink-0">
-              <div className="glass-panel p-4 sticky top-28">
-                <nav className="space-y-1">
-                  {tabs.map((tab) => (
-                    <button
-                      key={tab.id}
-                      onClick={() => setActiveTab(tab.id)}
-                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
-                        activeTab === tab.id 
-                          ? 'bg-primary text-primary-foreground' 
-                          : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-                      }`}
-                    >
-                      <tab.icon className="w-4 h-4" />
-                      {tab.label}
-                    </button>
-                  ))}
-                </nav>
-              </div>
-            </aside>
+          {/* Horizontal Tab Navigation */}
+          <Tabs defaultValue="overview" value={activeTab} onValueChange={(value) => setActiveTab(value as TabId)} className="space-y-6">
+            <TabsList className="glass-panel p-1 w-full justify-start overflow-x-auto flex-wrap h-auto">
+              {tabs.map((tab) => (
+                <TabsTrigger key={tab.id} value={tab.id} className="gap-2">
+                  <tab.icon className="w-4 h-4" />
+                  {tab.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
 
             {/* Content Area */}
-            <main className="flex-1 min-w-0">
+            <TabsContent value="overview">
               <motion.div
-                key={activeTab}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.2 }}
               >
-                {activeTab === 'overview' && (
-                  <div className="space-y-6">
+                <div className="space-y-6">
                     {/* Stats Grid */}
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                       <StatCard 
@@ -241,79 +227,132 @@ export default function Dashboard() {
                       </p>
                     </div>
                   </div>
-                )}
-
-                {activeTab === 'analytics' && (
-                  <div className="glass-panel p-6">
-                    <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
-                      <TrendingUp className="w-5 h-5" />
-                      Research Analytics
-                    </h3>
-                    <AnalyticsCharts />
-                  </div>
-                )}
-                
-                {activeTab === 'collaboration' && (
-                  <div className="glass-panel p-6">
-                    <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
-                      <Network className="w-5 h-5" />
-                      Collaboration Network
-                    </h3>
-                    <CollaborationNetwork />
-                  </div>
-                )}
-                
-                {activeTab === 'ai-predictions' && (
-                  <div className="glass-panel p-6">
-                    <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
-                      <Brain className="w-5 h-5" />
-                      AI-Powered Predictions
-                    </h3>
-                    <PredictiveAnalytics />
-                  </div>
-                )}
-
-                {activeTab === 'publications' && (
-                  <div className="glass-panel p-6">
-                    <PublicationTimeline />
-                  </div>
-                )}
-                
-                {activeTab === 'search' && (
-                  <div className="glass-panel p-6">
-                    <PublicationSearch />
-                  </div>
-                )}
-                
-                {activeTab === 'teams' && (
-                  <div className="glass-panel p-6">
-                    <ResearchTeamsPanel />
-                  </div>
-                )}
-                
-                {activeTab === 'citations' && (
-                  <div className="glass-panel p-6">
-                    <CitationImpactTracker />
-                  </div>
-                )}
-                
-                {activeTab === 'collaborations' && (
-                  <div className="glass-panel p-6">
-                    <CollaborationMap />
-                  </div>
-                )}
-                
-                {activeTab === 'orcid' && (
-                  <div className="glass-panel p-6">
-                    <OrcidSync 
-                      currentOrcidId={profile.orcid_id} 
-                      onSyncComplete={handleOrcidSyncComplete} 
-                    />
-                  </div>
-                )}
               </motion.div>
-            </main>
-          </div>
+            </TabsContent>
+
+            <TabsContent value="analytics">
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <div className="glass-panel p-6">
+                  <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+                    <TrendingUp className="w-5 h-5" />
+                    Research Analytics
+                  </h3>
+                  <AnalyticsCharts />
+                </div>
+              </motion.div>
+            </TabsContent>
+            
+            <TabsContent value="collaboration">
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <div className="glass-panel p-6">
+                  <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+                    <Network className="w-5 h-5" />
+                    Collaboration Network
+                  </h3>
+                  <CollaborationNetwork />
+                </div>
+              </motion.div>
+            </TabsContent>
+            
+            <TabsContent value="ai-predictions">
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <div className="glass-panel p-6">
+                  <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+                    <Brain className="w-5 h-5" />
+                    AI-Powered Predictions
+                  </h3>
+                  <PredictiveAnalytics />
+                </div>
+              </motion.div>
+            </TabsContent>
+
+            <TabsContent value="publications">
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <div className="glass-panel p-6">
+                  <PublicationTimeline />
+                </div>
+              </motion.div>
+            </TabsContent>
+            
+            <TabsContent value="search">
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <div className="glass-panel p-6">
+                  <PublicationSearch />
+                </div>
+              </motion.div>
+            </TabsContent>
+            
+            <TabsContent value="teams">
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <div className="glass-panel p-6">
+                  <ResearchTeamsPanel />
+                </div>
+              </motion.div>
+            </TabsContent>
+            
+            <TabsContent value="citations">
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <div className="glass-panel p-6">
+                  <CitationImpactTracker />
+                </div>
+              </motion.div>
+            </TabsContent>
+            
+            <TabsContent value="collaborations">
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <div className="glass-panel p-6">
+                  <CollaborationMap />
+                </div>
+              </motion.div>
+            </TabsContent>
+            
+            <TabsContent value="orcid">
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <div className="glass-panel p-6">
+                  <OrcidSync 
+                    currentOrcidId={profile.orcid_id} 
+                    onSyncComplete={handleOrcidSyncComplete} 
+                  />
+                </div>
+              </motion.div>
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     </div>
