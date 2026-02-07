@@ -282,8 +282,8 @@ export default function Index() {
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-cyan flex items-center justify-center">
-                <span className="text-white text-xs font-bold">U</span>
+              <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center overflow-hidden">
+                <img src="/favicon.svg" alt="UDSM Logo" className="w-full h-full object-contain" />
               </div>
               <div>
                 <p className="text-sm font-medium text-foreground">
