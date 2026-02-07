@@ -109,7 +109,7 @@ export default function Index() {
                     { label: 'Countries Reached', value: countryMetrics.length, icon: MapPin, color: 'primary' },
                     { label: 'Global Reads', value: `${(totalReads / 1000).toFixed(0)}K+`, icon: BookOpen, color: 'cyan' },
                     { label: 'Total Citations', value: `${(totalCitations / 1000).toFixed(0)}K+`, icon: TrendingUp, color: 'secondary' },
-                    { label: 'Partner Universities', value: '48', icon: Users, color: 'emerald' },
+                    { label: 'Active Researchers', value: '0', icon: Users, color: 'emerald' },
                   ]).map((stat, index) => (
                     <motion.div
                       key={stat.label}
