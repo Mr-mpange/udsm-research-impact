@@ -2,11 +2,12 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   X, Award, BookOpen, Users, TrendingUp, Building2, 
-  ExternalLink, Edit2, Save, Loader2, Link2, Search, BarChart3 
+  ExternalLink, Edit2, Save, Loader2, Link2, Search, BarChart3, Lock 
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/hooks/useAuth';
+import { useUserRole } from '@/hooks/useUserRole';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import PublicationTimeline from './PublicationTimeline';
@@ -24,6 +25,7 @@ interface ResearcherProfileProps {
 
 export default function ResearcherProfile({ isOpen, onClose }: ResearcherProfileProps) {
   const { profile, updateProfile } = useAuth();
+  const { isAdmin, isModerator } = useUserRole();
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -36,6 +38,13 @@ export default function ResearcherProfile({ isOpen, onClose }: ResearcherProfile
     orcid_id: '',
     bio: '',
   });
+
+  // Role-based permissions
+  const canEditName = true; // Everyone can edit their name
+  const canEditInstitution = isAdmin; // Only admins can change institution
+  const canEditDepartment = isAdmin || isModerator; // Admins and moderators
+  const canEditOrcid = true; // Everyone can edit ORCID
+  const canEditBio = true; // Everyone can edit bio
 
   useEffect(() => {
     if (profile) {
@@ -51,7 +60,16 @@ export default function ResearcherProfile({ isOpen, onClose }: ResearcherProfile
 
   const handleSave = async () => {
     setIsSaving(true);
-    const { error } = await updateProfile(formData);
+    
+    // Only include fields the user has permission to edit
+    const updates: any = {};
+    if (canEditName) updates.display_name = formData.display_name;
+    if (canEditInstitution) updates.institution = formData.institution;
+    if (canEditDepartment) updates.department = formData.department;
+    if (canEditOrcid) updates.orcid_id = formData.orcid_id;
+    if (canEditBio) updates.bio = formData.bio;
+    
+    const { error } = await updateProfile(updates);
     setIsSaving(false);
     
     if (error) {
@@ -181,6 +199,24 @@ export default function ResearcherProfile({ isOpen, onClose }: ResearcherProfile
         <div className="p-6">
           {activeTab === 'overview' && (
             <div className="space-y-6">
+              {/* Permissions Info - Show when editing */}
+              {isEditing && (
+                <div className="glass-panel p-4 bg-primary/5 border-primary/20">
+                  <h4 className="font-semibold text-sm text-foreground mb-2 flex items-center gap-2">
+                    <Lock className="w-4 h-4" />
+                    Edit Permissions
+                  </h4>
+                  <div className="text-xs text-muted-foreground space-y-1">
+                    <p>✅ <strong>You can edit:</strong> Name, ORCID, Biography</p>
+                    {isModerator && !isAdmin && <p>✅ <strong>Moderator:</strong> Can also edit Department</p>}
+                    {isAdmin && <p>✅ <strong>Admin:</strong> Can edit all fields including Institution</p>}
+                    {!isModerator && !isAdmin && (
+                      <p>🔒 <strong>Locked:</strong> Institution and Department (contact admin to change)</p>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* Stats Grid */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <StatCard 
@@ -221,16 +257,41 @@ export default function ResearcherProfile({ isOpen, onClose }: ResearcherProfile
                 </h3>
                 {isEditing ? (
                   <div className="space-y-3">
-                    <Input
-                      placeholder="Institution"
-                      value={formData.institution}
-                      onChange={(e) => setFormData({ ...formData, institution: e.target.value })}
-                    />
-                    <Input
-                      placeholder="Department"
-                      value={formData.department}
-                      onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                    />
+                    {/* Institution - Admin only */}
+                    <div className="relative">
+                      <Input
+                        placeholder="Institution"
+                        value={formData.institution}
+                        onChange={(e) => setFormData({ ...formData, institution: e.target.value })}
+                        disabled={!canEditInstitution}
+                        className={!canEditInstitution ? 'bg-muted/50 cursor-not-allowed' : ''}
+                      />
+                      {!canEditInstitution && (
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-xs text-muted-foreground">
+                          <Lock className="w-3 h-3" />
+                          <span>Admin only</span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Department - Admin & Moderator */}
+                    <div className="relative">
+                      <Input
+                        placeholder="Department"
+                        value={formData.department}
+                        onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                        disabled={!canEditDepartment}
+                        className={!canEditDepartment ? 'bg-muted/50 cursor-not-allowed' : ''}
+                      />
+                      {!canEditDepartment && (
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-xs text-muted-foreground">
+                          <Lock className="w-3 h-3" />
+                          <span>Moderator+</span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* ORCID - Everyone */}
                     <Input
                       placeholder="ORCID ID"
                       value={formData.orcid_id}
