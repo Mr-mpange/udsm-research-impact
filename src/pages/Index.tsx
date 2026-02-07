@@ -18,8 +18,6 @@ import { useSavedDashboards, type DashboardConfig } from '@/hooks/useSavedDashbo
 import { useInstitutionalStats } from '@/hooks/useInstitutionalStats';
 import { Badge } from '@/components/ui/badge';
 
-const logoImage = new URL('/favicon.svg', import.meta.url).href;
-
 export default function Index() {
   const [activeTab, setActiveTab] = useState('globe');
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -285,7 +283,7 @@ export default function Index() {
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center overflow-hidden">
-                <img src={logoImage} alt="UDSM Logo" className="w-full h-full object-contain" />
+                <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="UDSM Logo" className="w-full h-full object-contain" />
               </div>
               <div>
                 <p className="text-sm font-medium text-foreground">

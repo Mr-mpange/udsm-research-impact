@@ -7,8 +7,6 @@ import { useAuth } from '@/hooks/useAuth';
 import UserMenu from '@/components/auth/UserMenu';
 import AuthModal from '@/components/auth/AuthModal';
 
-const logoImage = new URL('/favicon.svg', import.meta.url).href;
-
 const navItems = [
   { path: '/', label: 'Home' },
   { path: '/research', label: 'Research Network' },
@@ -36,7 +34,7 @@ export default function PublicHeader() {
             >
               <div className="relative">
                 <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center overflow-hidden">
-                  <img src={logoImage} alt="UDSM Logo" className="w-full h-full object-contain" />
+                  <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="UDSM Logo" className="w-full h-full object-contain" />
                 </div>
                 <div className="absolute -top-1 -right-1 w-3 h-3 bg-secondary rounded-full animate-pulse" />
               </div>
