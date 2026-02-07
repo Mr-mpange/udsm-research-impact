@@ -177,28 +177,28 @@ export default function Dashboard() {
                         icon={Award} 
                         label="H-Index" 
                         value={profile.h_index || 0} 
-                        trend="+3 this year"
+                        trend=""
                         color="primary"
                       />
                       <StatCard 
                         icon={TrendingUp} 
                         label="Citations" 
                         value={profile.total_citations?.toLocaleString() || '0'} 
-                        trend="+128 this month"
+                        trend=""
                         color="secondary"
                       />
                       <StatCard 
                         icon={BookOpen} 
                         label="Publications" 
                         value={profile.total_publications || 0} 
-                        trend="12 in Q1 journals"
+                        trend=""
                         color="cyan"
                       />
                       <StatCard 
                         icon={Users} 
                         label="Co-Authors" 
-                        value="47" 
-                        trend="8 countries"
+                        value="0" 
+                        trend=""
                         color="emerald"
                       />
                     </div>
