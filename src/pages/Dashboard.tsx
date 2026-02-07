@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useNavigate } from 'react-router-dom';
+import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import UserMenu from '@/components/auth/UserMenu';
 import PublicationTimeline from '@/components/profile/PublicationTimeline';
@@ -22,6 +23,8 @@ import NotificationsPanel from '@/components/notifications/NotificationsPanel';
 import AnalyticsCharts from '@/components/AnalyticsCharts';
 import CollaborationNetwork from '@/components/CollaborationNetwork';
 import PredictiveAnalytics from '@/components/PredictiveAnalytics';
+
+import ResearcherProfile from '@/components/profile/ResearcherProfile';
 
 type TabId = 'overview' | 'analytics' | 'collaboration' | 'ai-predictions' | 'publications' | 'search' | 'teams' | 'citations' | 'collaborations' | 'orcid';
 
@@ -41,7 +44,9 @@ export default function Dashboard() {
   const { user, profile, isLoading } = useAuth();
   const { isAdmin } = useUserRole();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<TabId>('overview');
+  const [showProfileModal, setShowProfileModal] = useState(false);
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -82,41 +87,41 @@ export default function Dashboard() {
 
       <div className="relative">
         {/* Header */}
-        <header className="sticky top-0 z-50 glass-panel m-4 px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Avatar className="h-10 w-10">
+        <header className="sticky top-0 z-50 glass-panel m-2 sm:m-4 px-3 sm:px-6 py-3 sm:py-4">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+              <Avatar className="h-8 w-8 sm:h-10 sm:w-10 flex-shrink-0">
                 <AvatarImage src={profile.avatar_url || undefined} />
-                <AvatarFallback className="bg-gradient-to-br from-primary to-cyan text-primary-foreground">
+                <AvatarFallback className="bg-gradient-to-br from-primary to-cyan text-primary-foreground text-xs sm:text-sm">
                   {initials}
                 </AvatarFallback>
               </Avatar>
-              <div>
-                <h1 className="font-display font-bold text-lg text-foreground">
+              <div className="min-w-0">
+                <h1 className="font-display font-bold text-sm sm:text-lg text-foreground truncate">
                   {profile.display_name || 'Researcher Dashboard'}
                 </h1>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-muted-foreground truncate hidden sm:block">
                   {profile.institution || 'Your research hub'}
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1 sm:gap-3 flex-shrink-0">
               {/* Admin Access Button */}
               {isAdmin && (
                 <Button 
                   variant="outline" 
                   size="sm"
                   onClick={() => navigate('/admin')}
-                  className="gap-2"
+                  className="gap-2 hidden sm:flex"
                 >
                   <Shield className="w-4 h-4" />
-                  Admin Panel
+                  <span className="hidden md:inline">Admin Panel</span>
                 </Button>
               )}
               
-              {/* Quick Stats */}
-              <div className="hidden lg:flex items-center gap-4 mr-4">
+              {/* Quick Stats - Desktop only */}
+              <div className="hidden xl:flex items-center gap-4 mr-4">
                 <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary/10">
                   <Award className="w-4 h-4 text-primary" />
                   <span className="text-sm font-medium text-foreground">H-Index: {profile.h_index || 0}</span>
@@ -131,7 +136,7 @@ export default function Dashboard() {
                 </div>
               </div>
               <NotificationsPanel />
-              <UserMenu onOpenProfile={() => setActiveTab('overview')} />
+              <UserMenu onOpenProfile={() => setShowProfileModal(true)} />
             </div>
           </div>
         </header>
@@ -139,8 +144,30 @@ export default function Dashboard() {
         {/* Main Content */}
         <div className="container mx-auto px-4 py-6">
           <div className="flex flex-col lg:flex-row gap-6">
-            {/* Vertical Sidebar Navigation */}
-            <aside className="lg:w-64 flex-shrink-0">
+            {/* Mobile Horizontal Tabs */}
+            <div className="lg:hidden">
+              <div className="glass-panel p-2">
+                <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                  {tabs.map((tab) => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors flex-shrink-0 ${
+                        activeTab === tab.id 
+                          ? 'bg-primary text-primary-foreground' 
+                          : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                      }`}
+                    >
+                      <tab.icon className="w-4 h-4" />
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Desktop Vertical Sidebar Navigation */}
+            <aside className="hidden lg:block lg:w-64 flex-shrink-0">
               <div className="glass-panel p-4 sticky top-28">
                 <nav className="space-y-1">
                   {tabs.map((tab) => (
@@ -317,6 +344,12 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      {/* Profile Settings Modal */}
+      <ResearcherProfile 
+        isOpen={showProfileModal} 
+        onClose={() => setShowProfileModal(false)} 
+      />
     </div>
   );
 }

@@ -111,8 +111,11 @@ export default function UserMenu({ onOpenProfile }: UserMenuProps) {
                   My Publications
                 </button>
                 <button
-                  onClick={() => setIsOpen(false)}
-                  className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg hover:bg-muted transition-colors"
+                  onClick={() => {
+                    onOpenProfile();
+                    setIsOpen(false);
+                  }}
+                  className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg hover:bg-muted transition-colors text-left"
                 >
                   <Settings className="w-4 h-4" />
                   Settings
