@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useResearchTeams, type ResearchTeam, type TeamMember, type CollaborationRequest } from '@/hooks/useResearchTeams';
 import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
 interface TeamDetailsProps {
@@ -27,6 +28,7 @@ function TeamDetails({ team, onClose }: TeamDetailsProps) {
   const [inviteMessage, setInviteMessage] = useState('');
   const { getTeamMembers, inviteToTeam, leaveTeam, deleteTeam } = useResearchTeams();
   const { user } = useAuth();
+  const { toast } = useToast();
 
   useEffect(() => {
     const load = async () => {
@@ -50,17 +52,28 @@ function TeamDetails({ team, onClose }: TeamDetailsProps) {
       .maybeSingle();
 
     if (!profile) {
-      alert('User not found');
+      toast({
+        variant: "destructive",
+        title: "User not found",
+        description: "No user found with that email address.",
+      });
       return;
     }
 
     const { error } = await inviteToTeam(team.id, profile.user_id, inviteMessage);
     if (error) {
-      alert('Error sending invitation');
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to send invitation.",
+      });
     } else {
       setInviteEmail('');
       setInviteMessage('');
-      alert('Invitation sent!');
+      toast({
+        title: "Invitation sent!",
+        description: "The user has been invited to join the team.",
+      });
     }
   };
 

@@ -48,8 +48,6 @@ export default function Admin() {
       if (!isAdmin) return;
 
       try {
-        console.log('Fetching admin stats from database...');
-        
         // Fetch counts with no cache
         const [usersRes, pubsRes, chatsRes, dashboardsRes] = await Promise.all([
           supabase.from('profiles').select('id, h_index, total_citations, updated_at', { count: 'exact' }),
@@ -57,13 +55,6 @@ export default function Admin() {
           supabase.from('chat_history').select('id', { count: 'exact', head: true }),
           supabase.from('saved_dashboards').select('id', { count: 'exact', head: true })
         ]);
-
-        console.log('Database results:', {
-          users: usersRes.count,
-          publications: pubsRes.count,
-          chats: chatsRes.count,
-          dashboards: dashboardsRes.count
-        });
 
         // Calculate average H-Index and total citations
         const profiles = usersRes.data || [];
@@ -89,12 +80,6 @@ export default function Admin() {
           totalCitations: totalCitations,
           activeResearchers: activeResearchers
         });
-        
-        console.log('Stats updated:', {
-          totalPublications: pubsRes.count || 0,
-          avgHIndex: Math.round(avgHIndex * 10) / 10,
-          totalCitations: totalCitations
-        });
       } catch (error) {
         console.error('Error fetching admin stats:', error);
       }
@@ -106,8 +91,6 @@ export default function Admin() {
   const handleRefresh = async () => {
     setIsRefreshing(true);
     try {
-      console.log('Manual refresh triggered...');
-      
       const [usersRes, pubsRes, chatsRes, dashboardsRes] = await Promise.all([
         supabase.from('profiles').select('id, h_index, total_citations, updated_at', { count: 'exact' }),
         supabase.from('researcher_publications').select('id', { count: 'exact', head: true }),
@@ -136,12 +119,6 @@ export default function Admin() {
         avgHIndex: Math.round(avgHIndex * 10) / 10,
         totalCitations: totalCitations,
         activeResearchers: activeResearchers
-      });
-      
-      console.log('Refreshed stats:', {
-        publications: pubsRes.count,
-        citations: totalCitations,
-        hIndex: Math.round(avgHIndex * 10) / 10
       });
     } catch (error) {
       console.error('Error refreshing stats:', error);

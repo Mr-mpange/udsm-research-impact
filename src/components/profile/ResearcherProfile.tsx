@@ -124,51 +124,50 @@ export default function ResearcherProfile({ isOpen, onClose }: ResearcherProfile
       
       {/* Panel */}
       <motion.div
-        className="fixed right-0 top-0 bottom-0 w-full max-w-3xl glass-panel z-50 overflow-y-auto"
+        className="fixed right-0 top-0 bottom-0 w-full sm:max-w-3xl glass-panel z-50 overflow-y-auto"
         initial={{ opacity: 0, x: 100 }}
         animate={{ opacity: 1, x: 0 }}
         exit={{ opacity: 0, x: 100 }}
       >
         {/* Header */}
-        <div className="sticky top-0 bg-background/95 backdrop-blur-sm border-b border-border p-6 z-10">
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-4">
-              <Avatar className="h-16 w-16">
+        <div className="sticky top-0 bg-background/95 backdrop-blur-sm border-b border-border p-3 sm:p-6 z-10">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+              <Avatar className="h-12 w-12 sm:h-16 sm:w-16 flex-shrink-0">
                 <AvatarImage src={profile.avatar_url || undefined} />
-                <AvatarFallback className="bg-gradient-to-br from-primary to-cyan text-primary-foreground text-xl">
+                <AvatarFallback className="bg-gradient-to-br from-primary to-cyan text-primary-foreground text-sm sm:text-xl">
                   {initials}
                 </AvatarFallback>
               </Avatar>
-              <div>
+              <div className="min-w-0">
                 {isEditing ? (
                   <Input
                     value={formData.display_name}
                     onChange={(e) => setFormData({ ...formData, display_name: e.target.value })}
-                    className="text-xl font-display font-bold mb-1"
+                    className="text-base sm:text-xl font-display font-bold mb-1"
                   />
                 ) : (
-                  <h2 className="text-xl font-display font-bold text-foreground">
+                  <h2 className="text-base sm:text-xl font-display font-bold text-foreground truncate">
                     {profile.display_name || 'Researcher'}
                   </h2>
                 )}
-                <p className="text-sm text-muted-foreground">{profile.email}</p>
+                <p className="text-xs sm:text-sm text-muted-foreground truncate">{profile.email}</p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
               {isEditing ? (
                 <>
-                  <Button variant="ghost" onClick={() => setIsEditing(false)}>
+                  <Button variant="ghost" size="sm" onClick={() => setIsEditing(false)} className="hidden sm:flex">
                     Cancel
                   </Button>
-                  <Button onClick={handleSave} disabled={isSaving}>
-                    {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
-                    Save
+                  <Button size="sm" onClick={handleSave} disabled={isSaving}>
+                    {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Save className="w-4 h-4 sm:mr-2" /><span className="hidden sm:inline">Save</span></>}
                   </Button>
                 </>
               ) : (
-                <Button variant="ghost" onClick={() => setIsEditing(true)}>
-                  <Edit2 className="w-4 h-4 mr-2" />
-                  Edit
+                <Button variant="ghost" size="sm" onClick={() => setIsEditing(true)}>
+                  <Edit2 className="w-4 h-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Edit</span>
                 </Button>
               )}
               <Button variant="ghost" size="icon" onClick={onClose}>
@@ -177,13 +176,13 @@ export default function ResearcherProfile({ isOpen, onClose }: ResearcherProfile
             </div>
           </div>
 
-          {/* Tabs */}
-          <div className="flex gap-1 mt-6">
+          {/* Tabs - Horizontal scroll on mobile */}
+          <div className="flex gap-1 mt-4 sm:mt-6 overflow-x-auto pb-2 scrollbar-hide">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                className={`px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
                   activeTab === tab.id 
                     ? 'bg-primary text-primary-foreground' 
                     : 'text-muted-foreground hover:text-foreground hover:bg-muted'
@@ -196,7 +195,7 @@ export default function ResearcherProfile({ isOpen, onClose }: ResearcherProfile
         </div>
 
         {/* Content */}
-        <div className="p-6">
+        <div className="p-3 sm:p-6">
           {activeTab === 'overview' && (
             <div className="space-y-6">
               {/* Permissions Info - Show when editing */}
@@ -222,29 +221,25 @@ export default function ResearcherProfile({ isOpen, onClose }: ResearcherProfile
                 <StatCard 
                   icon={Award} 
                   label="H-Index" 
-                  value={profile.h_index} 
-                  trend="+3 this year"
+                  value={profile.h_index || 0} 
                   color="primary"
                 />
                 <StatCard 
                   icon={TrendingUp} 
                   label="Citations" 
-                  value={profile.total_citations.toLocaleString()} 
-                  trend="+128 this month"
+                  value={profile.total_citations?.toLocaleString() || '0'} 
                   color="secondary"
                 />
                 <StatCard 
                   icon={BookOpen} 
                   label="Publications" 
-                  value={profile.total_publications} 
-                  trend="12 in Q1 journals"
+                  value={profile.total_publications || 0} 
                   color="cyan"
                 />
                 <StatCard 
                   icon={Users} 
                   label="Co-Authors" 
-                  value="47" 
-                  trend="8 countries"
+                  value="0" 
                   color="emerald"
                 />
               </div>
@@ -366,13 +361,11 @@ function StatCard({
   icon: Icon, 
   label, 
   value, 
-  trend,
   color 
 }: { 
   icon: any; 
   label: string; 
   value: string | number; 
-  trend: string;
   color: 'primary' | 'secondary' | 'cyan' | 'emerald';
 }) {
   const colorClasses = {
@@ -383,13 +376,12 @@ function StatCard({
   };
 
   return (
-    <div className="glass-panel p-4">
-      <div className={`w-8 h-8 rounded-lg ${colorClasses[color]} flex items-center justify-center mb-3`}>
-        <Icon className="w-4 h-4" />
+    <div className="glass-panel p-3 sm:p-4">
+      <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-lg ${colorClasses[color]} flex items-center justify-center mb-2 sm:mb-3`}>
+        <Icon className="w-3 h-3 sm:w-4 sm:h-4" />
       </div>
-      <p className="text-2xl font-bold text-foreground">{value}</p>
-      <p className="text-sm text-muted-foreground">{label}</p>
-      <p className="text-xs text-emerald mt-1">{trend}</p>
+      <p className="text-lg sm:text-2xl font-bold text-foreground">{value}</p>
+      <p className="text-xs sm:text-sm text-muted-foreground">{label}</p>
     </div>
   );
 }
