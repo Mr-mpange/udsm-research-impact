@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, LogOut, Settings, FileText, ChevronDown } from 'lucide-react';
+import { User, LogOut, Settings, FileText, ChevronDown, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
+import { useUserRole } from '@/hooks/useUserRole';
 import { useNavigate } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
@@ -13,9 +14,23 @@ interface UserMenuProps {
 export default function UserMenu({ onOpenProfile }: UserMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const { user, profile, signOut } = useAuth();
+  const { isAdmin, isModerator } = useUserRole();
   const navigate = useNavigate();
 
   if (!user) return null;
+
+  // Determine the default dashboard based on role
+  const getDashboardRoute = () => {
+    if (isAdmin) return '/admin';
+    if (isModerator) return '/moderator';
+    return '/dashboard';
+  };
+
+  const getDashboardLabel = () => {
+    if (isAdmin) return 'Admin Dashboard';
+    if (isModerator) return 'Moderator Dashboard';
+    return 'My Dashboard';
+  };
 
   const initials = profile?.display_name
     ?.split(' ')
@@ -68,14 +83,26 @@ export default function UserMenu({ onOpenProfile }: UserMenuProps) {
               <div className="p-1">
                 <button
                   onClick={() => {
-                    navigate('/dashboard');
+                    navigate(getDashboardRoute());
                     setIsOpen(false);
                   }}
                   className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg hover:bg-muted transition-colors"
                 >
-                  <User className="w-4 h-4" />
-                  My Dashboard
+                  {(isAdmin || isModerator) ? <Shield className="w-4 h-4" /> : <User className="w-4 h-4" />}
+                  {getDashboardLabel()}
                 </button>
+                {(isAdmin || isModerator) && (
+                  <button
+                    onClick={() => {
+                      navigate('/dashboard');
+                      setIsOpen(false);
+                    }}
+                    className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg hover:bg-muted transition-colors"
+                  >
+                    <User className="w-4 h-4" />
+                    My Profile
+                  </button>
+                )}
                 <button
                   onClick={() => setIsOpen(false)}
                   className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg hover:bg-muted transition-colors"

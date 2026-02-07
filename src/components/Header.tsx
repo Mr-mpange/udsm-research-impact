@@ -31,7 +31,7 @@ const publicDemoTabs = [
 export default function Header({ activeTab, setActiveTab, onOpenAuth, onOpenProfile, onOpenExport }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, profile } = useAuth();
-  const { isAdmin } = useUserRole();
+  const { isAdmin, isModerator } = useUserRole();
   const navigate = useNavigate();
   return (
     <header className="fixed top-0 left-0 right-0 z-50">
@@ -104,7 +104,11 @@ export default function Header({ activeTab, setActiveTab, onOpenAuth, onOpenProf
             {/* User Research Tab - only for authenticated users */}
             {user && (
               <motion.button
-                onClick={() => navigate('/dashboard')}
+                onClick={() => {
+                  if (isAdmin) navigate('/admin');
+                  else if (isModerator) navigate('/moderator');
+                  else navigate('/dashboard');
+                }}
                 className="nav-link flex items-center gap-2 rounded-lg text-primary hover:bg-primary/10"
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -112,8 +116,10 @@ export default function Header({ activeTab, setActiveTab, onOpenAuth, onOpenProf
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
-                <FileText className="w-4 h-4" />
-                <span className="text-sm font-medium">My Dashboard</span>
+                {(isAdmin || isModerator) ? <Shield className="w-4 h-4" /> : <FileText className="w-4 h-4" />}
+                <span className="text-sm font-medium">
+                  {isAdmin ? 'Admin' : isModerator ? 'Moderator' : 'My Dashboard'}
+                </span>
               </motion.button>
             )}
           </nav>
@@ -176,6 +182,18 @@ export default function Header({ activeTab, setActiveTab, onOpenAuth, onOpenProf
               >
                 <Shield className="w-4 h-4" />
                 Admin
+              </Button>
+            )}
+
+            {isModerator && !isAdmin && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="hidden md:flex gap-2"
+                onClick={() => navigate('/moderator')}
+              >
+                <Shield className="w-4 h-4" />
+                Moderator
               </Button>
             )}
 
@@ -260,7 +278,9 @@ export default function Header({ activeTab, setActiveTab, onOpenAuth, onOpenProf
               {user && (
                 <button
                   onClick={() => {
-                    navigate('/dashboard');
+                    if (isAdmin) navigate('/admin');
+                    else if (isModerator) navigate('/moderator');
+                    else navigate('/dashboard');
                     setMobileMenuOpen(false);
                   }}
                   className="flex items-center gap-2 p-3 rounded-lg transition-colors bg-primary/20 text-primary hover:bg-primary/30"
