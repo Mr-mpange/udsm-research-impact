@@ -7,7 +7,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
 import UserMenu from '@/components/auth/UserMenu';
 import NotificationsPanel from '@/components/notifications/NotificationsPanel';
-import logoImage from '/favicon.svg';
+
+const logoImage = new URL('/favicon.svg', import.meta.url).href;
 
 interface HeaderProps {
   activeTab: string;

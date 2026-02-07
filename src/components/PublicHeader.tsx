@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import UserMenu from '@/components/auth/UserMenu';
 import AuthModal from '@/components/auth/AuthModal';
-import logoImage from '/favicon.svg';
+
+const logoImage = new URL('/favicon.svg', import.meta.url).href;
 
 const navItems = [
   { path: '/', label: 'Home' },

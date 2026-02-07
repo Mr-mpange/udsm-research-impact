@@ -17,7 +17,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { useSavedDashboards, type DashboardConfig } from '@/hooks/useSavedDashboards';
 import { useInstitutionalStats } from '@/hooks/useInstitutionalStats';
 import { Badge } from '@/components/ui/badge';
-import logoImage from '/favicon.svg';
+
+const logoImage = new URL('/favicon.svg', import.meta.url).href;
 
 export default function Index() {
   const [activeTab, setActiveTab] = useState('globe');
