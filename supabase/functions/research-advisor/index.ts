@@ -135,7 +135,7 @@ serve(async (req: Request) => {
     let response;
 
     if (GEMINI_API_KEY) {
-      // Use Google Gemini API with new SDK
+      // Use Google Gemini API with streaming
       const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
       const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
       
@@ -156,8 +156,37 @@ serve(async (req: Request) => {
         const result = await model.generateContent(conversationText);
         const text = result.response.text();
         
-        return new Response(text, {
-          headers: { ...corsHeaders, "Content-Type": "text/plain" },
+        // Convert to SSE format for streaming
+        const encoder = new TextEncoder();
+        const stream = new ReadableStream({
+          start(controller) {
+            // Send the response as chunks to simulate streaming
+            const words = text.split(' ');
+            let currentChunk = '';
+            
+            for (let i = 0; i < words.length; i++) {
+              currentChunk += (i > 0 ? ' ' : '') + words[i];
+              
+              // Send chunk every few words
+              if (i % 3 === 0 || i === words.length - 1) {
+                const sseData = `data: ${JSON.stringify({
+                  choices: [{
+                    delta: { content: currentChunk }
+                  }]
+                })}\n\n`;
+                controller.enqueue(encoder.encode(sseData));
+                currentChunk = '';
+              }
+            }
+            
+            // Send done signal
+            controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+            controller.close();
+          }
+        });
+        
+        return new Response(stream, {
+          headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
         });
       } catch (error: any) {
         console.error("Gemini API error:", error);
