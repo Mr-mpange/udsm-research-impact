@@ -7,13 +7,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useChatHistory, type ChatMessage } from '@/hooks/useChatHistory';
 import ChatHistoryPanel from '@/components/chat/ChatHistoryPanel';
 
-const suggestedQuestions = [
-  "Which UDSM papers influence Europe most?",
-  "Which topics should we invest in for 2027 impact?",
-  "Suggest new collaboration targets in Asia.",
-  "What's our current Q1 publication trend?",
-  "Which authors have the highest h-index growth?"
-];
+// Suggested questions removed - users can ask freely about their research data
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/research-advisor`;
 
@@ -116,7 +110,7 @@ async function streamChat({
 const welcomeMessage: ChatMessage = {
   id: '1',
   role: 'assistant',
-  content: "Hello! I'm the UDSM Research Intelligence Advisor powered by AI. I can help you analyze research impact, identify collaboration opportunities, and provide strategic insights. What would you like to know?"
+  content: "Hi! I'm here to help with your research questions. I can explain metrics like H-Index and citations, suggest ways to improve your research impact, or just chat about academic topics. What would you like to know?"
 };
 
 export default function AIAdvisor() {
@@ -352,25 +346,6 @@ export default function AIAdvisor() {
                   )}
                   <div ref={messagesEndRef} />
                 </div>
-
-                {/* Suggested Questions */}
-                {messages.length <= 2 && (
-                  <div className="px-4 pb-2">
-                    <p className="text-xs text-muted-foreground mb-2">Suggested questions:</p>
-                    <div className="flex flex-wrap gap-2">
-                      {suggestedQuestions.slice(0, 3).map((q) => (
-                        <button
-                          key={q}
-                          onClick={() => handleSend(q)}
-                          disabled={isLoading}
-                          className="text-xs px-3 py-1.5 rounded-full bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
-                        >
-                          {q.length > 35 ? q.substring(0, 35) + '...' : q}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
 
                 {/* Input */}
                 <div className="p-4 border-t border-border">

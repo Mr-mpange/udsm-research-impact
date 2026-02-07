@@ -67,24 +67,24 @@ CREATE POLICY "Authenticated users can update collaboration partnerships"
   USING (true);
 
 -- Insert some sample partner institutions (optional - remove if you want to start empty)
-INSERT INTO partner_institutions (name, type, country, description) VALUES
-  ('University of Cape Town', 'university', 'South Africa', 'Leading research university in Africa'),
-  ('University of Nairobi', 'university', 'Kenya', 'Premier university in East Africa'),
-  ('Oxford University', 'university', 'United Kingdom', 'World-renowned research institution'),
-  ('MIT', 'university', 'United States', 'Massachusetts Institute of Technology'),
-  ('Tsinghua University', 'university', 'China', 'Top engineering and technology university'),
-  ('Gates Foundation', 'funding_body', 'United States', 'Global health and development funding'),
-  ('World Bank', 'funding_body', 'International', 'International financial institution'),
-  ('WHO', 'government', 'International', 'World Health Organization');
+-- INSERT INTO partner_institutions (name, type, country, description) VALUES
+--   ('University of Cape Town', 'university', 'South Africa', 'Leading research university in Africa'),
+--   ('University of Nairobi', 'university', 'Kenya', 'Premier university in East Africa'),
+--   ('Oxford University', 'university', 'United Kingdom', 'World-renowned research institution'),
+--   ('MIT', 'university', 'United States', 'Massachusetts Institute of Technology'),
+--   ('Tsinghua University', 'university', 'China', 'Top engineering and technology university'),
+--   ('Gates Foundation', 'funding_body', 'United States', 'Global health and development funding'),
+--   ('World Bank', 'funding_body', 'International', 'International financial institution'),
+--   ('WHO', 'government', 'International', 'World Health Organization');
 
 -- Insert sample collaboration data for the partners
-INSERT INTO collaboration_partnerships (partner_institution_id, collaboration_count, joint_publications, impact_score)
-SELECT 
-  id,
-  FLOOR(RANDOM() * 80 + 20)::INTEGER,
-  FLOOR(RANDOM() * 150 + 30)::INTEGER,
-  ROUND((RANDOM() * 2 + 7)::NUMERIC, 2)
-FROM partner_institutions;
+-- INSERT INTO collaboration_partnerships (partner_institution_id, collaboration_count, joint_publications, impact_score)
+-- SELECT 
+--   id,
+--   FLOOR(RANDOM() * 80 + 20)::INTEGER,
+--   FLOOR(RANDOM() * 150 + 30)::INTEGER,
+--   ROUND((RANDOM() * 2 + 7)::NUMERIC, 2)
+-- FROM partner_institutions;
 
 -- Add updated_at trigger
 CREATE OR REPLACE FUNCTION update_updated_at_column()

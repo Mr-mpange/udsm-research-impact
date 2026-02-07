@@ -1,104 +1,186 @@
+// Supabase Edge Function - Runs in Deno runtime
+// Note: IDE may show errors for Deno imports - this is normal
+// The code works correctly when deployed to Supabase Edge Functions
+// @ts-ignore - Deno runtime types
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+// @ts-ignore - Deno runtime types
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+// @ts-ignore - Deno runtime types
+import { GoogleGenerativeAI } from "https://esm.sh/@google/generative-ai@0.21.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const systemPrompt = `You are the UDSM Research Intelligence Advisor, an AI assistant for the University of Dar es Salaam's Global Research Intelligence Platform.
+// Fetch real data from database
+async function fetchRealData(supabaseClient: any) {
+  try {
+    // Fetch publications count and stats
+    const { data: publications, error: pubError } = await supabaseClient
+      .from('researcher_publications')
+      .select('*');
+    
+    // Fetch partner institutions
+    const { data: partners, error: partnerError } = await supabaseClient
+      .from('partner_institutions')
+      .select('*, collaboration_partnerships(*)');
+    
+    // Fetch user profiles count
+    const { count: userCount } = await supabaseClient
+      .from('profiles')
+      .select('*', { count: 'exact', head: true });
+    
+    // Calculate real metrics
+    const totalPublications = publications?.length || 0;
+    const totalCitations = publications?.reduce((sum: number, pub: any) => sum + (pub.citations || 0), 0) || 0;
+    const avgCitations = totalPublications > 0 ? Math.round(totalCitations / totalPublications) : 0;
+    const totalPartners = partners?.length || 0;
+    const activeResearchers = userCount || 0;
+    
+    return {
+      totalPublications,
+      totalCitations,
+      avgCitations,
+      totalPartners,
+      activeResearchers,
+      topPartners: partners?.slice(0, 5).map((p: any) => p.name) || [],
+      hasData: totalPublications > 0 || totalPartners > 0
+    };
+  } catch (error) {
+    console.error('Error fetching real data:', error);
+    return { hasData: false };
+  }
+}
 
-You have access to the following research data and metrics:
+function buildSystemPrompt(realData: any) {
+  const basePrompt = `You are a helpful research advisor AI assistant for the University of Dar es Salaam (UDSM). Your role is to help researchers understand and improve their academic work.
 
-**UDSM Research Overview (2024):**
-- Global Impact Index: 78.4
-- Total Citations: 156,789
-- Total Papers: 4,523
-- H-Index Growth: 12.5%
-- Open Access: 67.8%
-- International Collaborations: 892
-- Q1 Publications: 423
-- Altmetric Score: 8,934
+Guidelines:
+- Be conversational and friendly, like talking to a colleague
+- Keep responses concise (2-3 paragraphs max)
+- Use simple language, avoid jargon unless necessary
+- Focus on being helpful and encouraging
+- IMPORTANT: Use ONLY the real data provided below. DO NOT make up statistics or numbers.`;
 
-**Top Research Countries by Engagement:**
-1. China - 52,340 reads, 6,780 citations
-2. United States - 45,230 reads, 8,920 citations
-3. United Kingdom - 38,450 reads, 7,230 citations
-4. India - 34,120 reads, 4,560 citations
-5. South Africa - 29,870 reads, 5,670 citations
+  if (realData.hasData) {
+    return `${basePrompt}
 
-**Journal Quartile Distribution:**
-- Q1: 28% (423 papers)
-- Q2: 37% (567 papers)
-- Q3: 25% (389 papers)
-- Q4: 10% (156 papers)
+REAL UDSM DATA (Use this information when relevant):
+- Total Publications in Database: ${realData.totalPublications}
+- Total Citations: ${realData.totalCitations}
+- Average Citations per Paper: ${realData.avgCitations}
+- Active Researchers: ${realData.activeResearchers}
+- Partner Institutions: ${realData.totalPartners}
+- Top Partners: ${realData.topPartners.join(', ')}
 
-**Top Research Themes:**
-1. Health Sciences - 678 papers, 23,456 citations
-2. Engineering - 523 papers, 18,234 citations
-3. Environmental Science - 456 papers, 15,678 citations
-4. Agriculture - 389 papers, 12,345 citations
-5. Social Sciences - 345 papers, 9,876 citations
+When users ask about UDSM metrics, use ONLY these real numbers. If you don't have specific data, acknowledge it and offer general advice instead of making up numbers.
 
-**Top Authors:**
-1. Prof. Amani Mwangi (Engineering) - H-Index: 34, Citations: 4,567
-2. Prof. Joseph Kimathi (Natural Sciences) - H-Index: 31, Citations: 3,890
-3. Dr. Fatima Hassan (Medicine) - H-Index: 28, Citations: 3,234
+You can help with:
+- Explaining research metrics (H-Index, citations, impact factor)
+- Suggesting strategies to improve research visibility
+- Understanding publication trends
+- General academic career advice
+- Research best practices
 
-**Predicted Emerging Topics (2025-2027):**
-1. AI in Healthcare - 45% growth rate, 89% confidence
-2. Climate Adaptation - 38% growth rate, 92% confidence
-3. Renewable Energy - 35% growth rate, 87% confidence
-4. Digital Agriculture - 32% growth rate, 84% confidence
+Respond naturally as if you're having a conversation with a researcher colleague.`;
+  } else {
+    return `${basePrompt}
 
-**Strategic Partner Recommendations:**
-1. NUS Singapore - 92% match (Health Sciences alignment)
-2. ETH Zurich - 88% match (Engineering synergy)
-3. University of Tokyo - 85% match (Marine Sciences)
+NOTE: The database currently has limited data. When discussing UDSM-specific metrics, acknowledge that the system is being populated and offer general research advice instead of specific numbers.
 
-**Key Partner Institutions:**
-- University of Cape Town (67 collaborations, 124 joint publications)
-- University of Nairobi (78 collaborations, 156 joint publications)
-- Oxford University (52 collaborations, 89 joint publications)
-- MIT (45 collaborations, 67 joint publications)
+You can help with:
+- Explaining research metrics (H-Index, citations, impact factor)
+- Suggesting strategies to improve research visibility
+- Understanding publication trends
+- General academic career advice
+- Research best practices
 
-Your role is to:
-1. Provide strategic research insights based on the data above
-2. Answer questions about UDSM's global research impact
-3. Recommend collaboration opportunities
-4. Identify high-potential research areas for investment
-5. Explain citation trends and impact metrics
-6. Suggest strategies to improve global rankings
+Respond naturally as if you're having a conversation with a researcher colleague.`;
+  }
+}
 
-Be concise, data-driven, and strategic in your responses. Use bullet points and structured formatting. Always reference specific metrics when possible.`;
-
-serve(async (req) => {
+serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
     const { messages } = await req.json();
+    
+    // Initialize Supabase client to fetch real data
+    // @ts-ignore - Deno runtime environment variable
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+    // @ts-ignore - Deno runtime environment variable
+    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    
+    const supabaseClient = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
+    
+    // Fetch real data from database
+    const realData = await fetchRealData(supabaseClient);
+    
+    // Build system prompt with real data
+    const systemPrompt = buildSystemPrompt(realData);
+    
+    // Try Gemini first, fallback to Lovable
+    // @ts-ignore - Deno runtime environment variable
+    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+    // @ts-ignore - Deno runtime environment variable
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+    if (!GEMINI_API_KEY && !LOVABLE_API_KEY) {
+      throw new Error("No API key configured. Please set GEMINI_API_KEY or LOVABLE_API_KEY");
     }
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages: [
-          { role: "system", content: systemPrompt },
-          ...messages,
-        ],
-        stream: true,
-      }),
-    });
+    let response;
+
+    if (GEMINI_API_KEY) {
+      // Use Google Gemini API with new SDK
+      const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+      
+      // Build conversation history
+      let conversationText = systemPrompt + "\n\n";
+      
+      messages.forEach((msg: any) => {
+        if (msg.role === "user") {
+          conversationText += `User: ${msg.content}\n\n`;
+        } else if (msg.role === "assistant") {
+          conversationText += `Assistant: ${msg.content}\n\n`;
+        }
+      });
+      
+      conversationText += "Assistant:";
+
+      try {
+        const result = await model.generateContent(conversationText);
+        const text = result.response.text();
+        
+        return new Response(text, {
+          headers: { ...corsHeaders, "Content-Type": "text/plain" },
+        });
+      } catch (error: any) {
+        console.error("Gemini API error:", error);
+        throw new Error(`Gemini API error: ${error.message}`);
+      }
+    } else {
+      // Use Lovable Gateway
+      response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-3-flash-preview",
+          messages: [
+            { role: "system", content: systemPrompt },
+            ...messages,
+          ],
+          stream: true,
+        }),
+      });
+    }
 
     if (!response.ok) {
       if (response.status === 429) {
