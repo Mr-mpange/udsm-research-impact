@@ -129,9 +129,15 @@ function EmergingTopics({ data }: { data: any[] }) {
         High-growth areas in your research portfolio
       </p>
       {data.length === 0 ? (
-        <p className="text-sm text-muted-foreground text-center py-8">
-          Not enough data to identify trends. Add more publications.
-        </p>
+        <div className="text-center py-8">
+          <Lightbulb className="w-10 h-10 text-muted-foreground/50 mx-auto mb-3" />
+          <p className="text-sm text-muted-foreground">
+            Add more publications to identify trending topics
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Requires at least 2 publications
+          </p>
+        </div>
       ) : (
         <div className="space-y-4">
           {data.map((topic, index) => (
@@ -227,24 +233,29 @@ function ScenarioSimulator({ publications }: { publications: any[] }) {
   const currentCitations = publications.length > 0 ? publications[0].predicted : 0;
   const futureYear = currentYear + 5;
   const futureCitations = publications.length > 0 ? publications[publications.length - 1].predicted : 0;
-  const growthPercent = currentCitations > 0 ? ((futureCitations - currentCitations) / currentCitations * 100).toFixed(0) : 0;
+  
+  // Calculate total growth over 5 years
+  const totalGrowth = futureCitations - currentCitations;
+  
+  // If no growth data, use current citations as baseline
+  const baselineImpact = totalGrowth > 0 ? totalGrowth : currentCitations;
 
   const scenarios = [
     { 
       name: 'Increase Publication Rate +30%', 
-      rankingChange: `+${Math.round(Number(growthPercent) * 0.3)} citations`,
+      rankingChange: `+${Math.round(baselineImpact * 0.3)} citations`,
       impact: 'positive',
       description: 'Publishing more frequently accelerates citation growth'
     },
     { 
       name: 'Focus on High-Impact Journals', 
-      rankingChange: `+${Math.round(Number(growthPercent) * 0.5)} citations`,
+      rankingChange: `+${Math.round(baselineImpact * 0.5)} citations`,
       impact: 'positive',
       description: 'Targeting Q1 journals significantly boosts visibility'
     },
     { 
       name: 'Expand International Collaborations', 
-      rankingChange: `+${Math.round(Number(growthPercent) * 0.4)} citations`,
+      rankingChange: `+${Math.round(baselineImpact * 0.4)} citations`,
       impact: 'positive',
       description: 'Cross-border partnerships increase global reach'
     },
@@ -335,7 +346,8 @@ export default function PredictiveAnalytics() {
         const forecast = predictCitationGrowth(publications, snapshots || []);
         setCitationForecast(forecast);
 
-        const topics = identifyEmergingTopics(publications);
+        // Only show emerging topics if 2+ publications
+        const topics = publications.length >= 2 ? identifyEmergingTopics(publications) : [];
         setEmergingTopics(topics);
 
         const partners = await recommendCollaborators(publications);
@@ -556,8 +568,10 @@ export default function PredictiveAnalytics() {
 
   if (citationForecast.length === 0) {
     return (
-      <div className="glass-panel p-6 text-center">
-        <p className="text-muted-foreground">No publication data available for predictions. Add publications to see AI-powered insights.</p>
+      <div className="glass-panel p-6 text-center py-12">
+        <AlertCircle className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+        <h3 className="font-semibold text-lg text-foreground mb-2">No Publication Data</h3>
+        <p className="text-muted-foreground">Add publications to see AI-powered insights and predictions.</p>
       </div>
     );
   }
