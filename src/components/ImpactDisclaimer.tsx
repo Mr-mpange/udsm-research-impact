@@ -1,4 +1,4 @@
-import { Info, TrendingUp, Users, Globe, Award } from 'lucide-react';
+import { Info, TrendingUp, Users, Globe, Award, Eye } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export default function ImpactDisclaimer() {
@@ -17,25 +17,35 @@ export default function ImpactDisclaimer() {
             About Research Impact Tracking
           </h3>
           <p className="text-sm text-muted-foreground mb-4">
-            This platform tracks <strong>verifiable academic impact</strong> of UDSM research publications 
-            through multiple data sources, providing evidence of global visibility and influence.
+            This platform tracks <strong>comprehensive research impact</strong> of UDSM publications 
+            through multiple data sources, providing complete evidence of global visibility and influence.
           </p>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="flex items-start gap-3">
-              <TrendingUp className="w-4 h-4 text-primary mt-1 flex-shrink-0" />
+              <Eye className="w-4 h-4 text-primary mt-1 flex-shrink-0" />
               <div>
-                <p className="text-sm font-medium text-foreground">Citation Tracking</p>
+                <p className="text-sm font-medium text-foreground">Direct Readership Tracking</p>
                 <p className="text-xs text-muted-foreground">
-                  Real-time data from CrossRef and Semantic Scholar APIs. Citations are the gold 
-                  standard for measuring academic impact - each citation represents confirmed 
-                  engagement with the research.
+                  Real-time tracking of views, downloads, and geographic reach. Every paper gets 
+                  a public URL that records who's reading your research worldwide.
                 </p>
               </div>
             </div>
 
             <div className="flex items-start gap-3">
-              <Users className="w-4 h-4 text-secondary mt-1 flex-shrink-0" />
+              <TrendingUp className="w-4 h-4 text-secondary mt-1 flex-shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-foreground">Citation Tracking</p>
+                <p className="text-xs text-muted-foreground">
+                  Automatic daily updates from CrossRef and Semantic Scholar APIs. Citations 
+                  measure long-term academic impact and influence.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3">
+              <Users className="w-4 h-4 text-cyan mt-1 flex-shrink-0" />
               <div>
                 <p className="text-sm font-medium text-foreground">Collaboration Networks</p>
                 <p className="text-xs text-muted-foreground">
@@ -46,34 +56,23 @@ export default function ImpactDisclaimer() {
             </div>
 
             <div className="flex items-start gap-3">
-              <Globe className="w-4 h-4 text-cyan mt-1 flex-shrink-0" />
+              <Globe className="w-4 h-4 text-emerald mt-1 flex-shrink-0" />
               <div>
                 <p className="text-sm font-medium text-foreground">Alternative Metrics</p>
                 <p className="text-xs text-muted-foreground">
-                  Social media mentions, news coverage, and policy citations via Altmetric 
-                  (when available), providing broader impact visibility.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3">
-              <Award className="w-4 h-4 text-emerald mt-1 flex-shrink-0" />
-              <div>
-                <p className="text-sm font-medium text-foreground">Publication Metrics</p>
-                <p className="text-xs text-muted-foreground">
-                  H-Index, journal quartiles, and publication trends demonstrating research 
-                  quality and productivity.
+                  Social media mentions, news coverage, and policy citations via Altmetric, 
+                  providing broader impact visibility beyond academia.
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="mt-4 p-3 rounded-lg bg-muted/50 border border-border">
+          <div className="mt-4 p-3 rounded-lg bg-primary/10 border border-primary/20">
             <p className="text-xs text-muted-foreground">
-              <strong>Note on Readership Data:</strong> Direct readership tracking requires access to 
-              publisher platforms (Nature, PLOS, Elsevier, etc.) where UDSM papers are hosted. 
-              Since we don't control these platforms, we use <strong>citations as a reliable proxy</strong> - 
-              every citation confirms that the research was read, understood, and built upon by other scholars.
+              <strong>Complete Impact Picture:</strong> From initial readership (views & downloads) 
+              to long-term influence (citations & collaborations), this platform provides the most 
+              comprehensive tracking of UDSM research impact available. All data is collected 
+              automatically and updated in real-time.
             </p>
           </div>
         </div>

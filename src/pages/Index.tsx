@@ -11,7 +11,6 @@ import AuthModal from '@/components/auth/AuthModal';
 import ResearcherProfile from '@/components/profile/ResearcherProfile';
 import DataExport from '@/components/export/DataExport';
 import SavedDashboardsPanel from '@/components/dashboard/SavedDashboardsPanel';
-import ImpactDisclaimer from '@/components/ImpactDisclaimer';
 import { countryMetrics } from '@/data/researchData';
 import { MapPin, TrendingUp, Users, BookOpen, Database, Sparkles } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
@@ -89,9 +88,6 @@ export default function Index() {
                     </p>
                   </motion.div>
                 </div>
-
-                {/* Impact Tracking Disclaimer */}
-                <ImpactDisclaimer />
 
                 {/* Quick Stats - Real data for authenticated users */}
                 {showRealData && (

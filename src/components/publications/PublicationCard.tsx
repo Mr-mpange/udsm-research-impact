@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { BookOpen, ExternalLink, Edit2, Trash2, Save, X, Loader2, TrendingUp, Eye } from 'lucide-react';
+import { BookOpen, ExternalLink, Edit2, Trash2, Save, X, Loader2, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -49,6 +49,7 @@ interface PublicationCardProps {
 
 export default function PublicationCard({ publication, index, onUpdate }: PublicationCardProps) {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -283,6 +284,19 @@ export default function PublicationCard({ publication, index, onUpdate }: Public
                 PDF <ExternalLink className="w-3 h-3" />
               </a>
             )}
+          </div>
+          
+          {/* View Paper Button */}
+          <div className="mt-3">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate(`/paper/${publication.id}`)}
+              className="gap-2 w-full sm:w-auto"
+            >
+              <Eye className="w-4 h-4" />
+              View Paper & Statistics
+            </Button>
           </div>
         </div>
         

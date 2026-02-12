@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Search, Filter, X, FileText, ExternalLink, BookOpen } from 'lucide-react';
+import { Search, Filter, X, FileText, ExternalLink, BookOpen, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -10,6 +10,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Slider } from '@/components/ui/slider';
 import { usePublicationSearch, type SearchFilters } from '@/hooks/usePublicationSearch';
+import { useNavigate } from 'react-router-dom';
 
 const quartileColors: Record<string, string> = {
   'Q1': 'bg-emerald-500/20 text-emerald-500 border-emerald-500/30',
@@ -20,6 +21,7 @@ const quartileColors: Record<string, string> = {
 
 export default function PublicationSearch() {
   const { results, isSearching, totalCount, search, getAllPublications, getDistinctJournals, getYearRange } = usePublicationSearch();
+  const navigate = useNavigate();
   
   const [filters, setFilters] = useState<SearchFilters>({ query: '' });
   const [showFilters, setShowFilters] = useState(false);
@@ -239,6 +241,19 @@ export default function PublicationSearch() {
                         {pub.co_authors.length} co-author{pub.co_authors.length > 1 ? 's' : ''}
                       </Badge>
                     )}
+                  </div>
+                  
+                  {/* View Paper Button */}
+                  <div className="mt-3">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => navigate(`/paper/${pub.id}`)}
+                      className="gap-2"
+                    >
+                      <Eye className="w-4 h-4" />
+                      View Paper
+                    </Button>
                   </div>
                 </div>
 

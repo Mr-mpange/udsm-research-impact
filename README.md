@@ -6,23 +6,26 @@ A comprehensive research impact tracking and analytics platform for the Universi
 
 ## About Impact Tracking
 
-This platform tracks **verifiable academic impact** through:
-- **Citation data** from CrossRef and Semantic Scholar APIs
-- **Publication metrics** including H-Index and journal quartiles
-- **Collaboration networks** showing worldwide research partnerships
-- **Altmetric scores** tracking social media mentions, news coverage, and policy citations
+This platform tracks **comprehensive research impact** through:
+- **Direct Readership Tracking**: Real-time views and downloads with geographic data
+- **Citation Data**: From CrossRef and Semantic Scholar APIs
+- **Publication Metrics**: H-Index, journal quartiles, and publication trends
+- **Collaboration Networks**: Worldwide research partnerships
+- **Altmetric Scores**: Social media mentions, news coverage, and policy citations
 
-**Why Citations?** While direct readership data requires access to publisher platforms (Nature, PLOS, etc.), citations provide a reliable, verifiable proxy for research impact. Every citation represents confirmed engagement with the research, making it a gold standard for measuring academic influence.
+**Complete Tracking**: Every paper gets a public URL that tracks views, downloads, and geographic reach in real-time. Combined with citation data, this provides the most comprehensive picture of research impact.
 
 ## Features
 
 ### 🌍 Global Impact Visualization
 - Interactive 3D globe showing worldwide research reach
-- Real-time citation tracking from CrossRef and Semantic Scholar APIs
-- Country-level engagement metrics
+- Real-time readership tracking (views, downloads, countries)
+- Citation tracking from CrossRef and Semantic Scholar APIs
+- Country-level engagement metrics with city-level detail
 - Alternative metrics via Altmetric (social media, news, policy citations)
 
 ### 📊 Comprehensive Impact Tracking
+- **Readership Tracking**: Real-time views, downloads, and geographic distribution
 - **Citation Data**: Verifiable academic impact through CrossRef/Semantic Scholar
 - **Publication Metrics**: H-Index, journal quartiles, publication trends
 - **Collaboration Networks**: Worldwide research partnerships visualization
@@ -70,15 +73,16 @@ This platform tracks **verifiable academic impact** through:
 - **Altmetric API**: Social media mentions, news coverage, policy citations, and Wikipedia references
 - **ORCID Integration**: Researcher profiles and publication verification
 
-### Why Citations Instead of Readership?
+### Readership Tracking System
 
-Direct readership tracking requires access to publisher platforms (Nature, PLOS, Elsevier, etc.) where UDSM papers are hosted. Since these platforms don't share detailed readership data, we use:
+Every paper uploaded to the platform gets a **public URL** that tracks:
 
-1. **Citations**: The gold standard for academic impact - every citation confirms the research was read and built upon
-2. **Altmetric Scores**: Broader attention including social media, news, and policy documents
-3. **Collaboration Networks**: Co-authorship patterns showing research influence
+1. **Views**: Total views and unique visitors with session tracking
+2. **Downloads**: PDF download counts with geographic data
+3. **Geographic Reach**: Country and city-level tracking via IP geolocation
+4. **Real-Time Statistics**: Live updates on paper pages and dashboards
 
-This approach provides **verifiable, reliable evidence** of global research impact.
+Combined with citation data from CrossRef/Semantic Scholar and Altmetric scores, this provides **complete, verifiable evidence** of global research impact - from initial readership to long-term academic influence.
 
 ## Getting Started
 
@@ -181,6 +185,8 @@ supabase/
 - `profiles` - User profiles and research metrics
 - `user_roles` - Role-based access control
 - `researcher_publications` - Publication tracking
+- `paper_views` - Real-time readership tracking (views)
+- `paper_downloads` - Download tracking with geographic data
 - `partner_institutions` - Collaboration partners
 - `collaboration_partnerships` - Partnership details
 - `research_teams` - Team management
