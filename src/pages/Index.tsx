@@ -170,31 +170,43 @@ export default function Index() {
                   <h2 className="font-display font-semibold text-lg text-foreground mb-4">
                     Top Countries by Research Engagement
                   </h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {countryMetrics.slice(0, 6).map((country, index) => (
-                      <motion.div
-                        key={country.code}
-                        className="flex items-center gap-4 p-4 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors"
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.5 + index * 0.05 }}
-                      >
-                        <span className="text-3xl">{country.flag}</span>
-                        <div className="flex-1">
-                          <p className="font-medium text-foreground">{country.name}</p>
-                          <div className="flex gap-4 text-xs text-muted-foreground mt-1">
-                            <span>{country.reads.toLocaleString()} reads</span>
-                            <span>{country.citations.toLocaleString()} citations</span>
+                  
+                  {showRealData ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <p className="text-sm">
+                        Real-time country data will appear here once papers are uploaded and viewed.
+                      </p>
+                      <p className="text-xs mt-2">
+                        Upload papers and share their public URLs to start tracking global readership.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {countryMetrics.slice(0, 6).map((country, index) => (
+                        <motion.div
+                          key={country.code}
+                          className="flex items-center gap-4 p-4 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors"
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: 0.5 + index * 0.05 }}
+                        >
+                          <span className="text-3xl">{country.flag}</span>
+                          <div className="flex-1">
+                            <p className="font-medium text-foreground">{country.name}</p>
+                            <div className="flex gap-4 text-xs text-muted-foreground mt-1">
+                              <span>{country.reads.toLocaleString()} reads</span>
+                              <span>{country.citations.toLocaleString()} citations</span>
+                            </div>
                           </div>
-                        </div>
-                        <div className="text-right">
-                          <span className="text-lg font-display font-bold text-primary">
-                            #{index + 1}
-                          </span>
-                        </div>
-                      </motion.div>
-                    ))}
-                  </div>
+                          <div className="text-right">
+                            <span className="text-lg font-display font-bold text-primary">
+                              #{index + 1}
+                            </span>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  )}
                 </motion.div>
               </motion.div>
             )}
