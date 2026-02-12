@@ -1,13 +1,33 @@
-# UDSM Research Intelligence Platform
+# UDSM Research Impact Intelligence Platform
 
-A comprehensive research impact tracking and analytics platform for the University of Dar es Salaam (UDSM).
+> **Mission**: Track and visualize UDSM's global academic footprint through real-time citation tracking, publication metrics, and worldwide collaboration networks.
+
+A comprehensive research impact tracking and analytics platform for the University of Dar es Salaam (UDSM). This platform addresses the challenge of evidencing global visibility and impact of UDSM research publications.
+
+## About Impact Tracking
+
+This platform tracks **verifiable academic impact** through:
+- **Citation data** from CrossRef and Semantic Scholar APIs
+- **Publication metrics** including H-Index and journal quartiles
+- **Collaboration networks** showing worldwide research partnerships
+- **Altmetric scores** tracking social media mentions, news coverage, and policy citations
+
+**Why Citations?** While direct readership data requires access to publisher platforms (Nature, PLOS, etc.), citations provide a reliable, verifiable proxy for research impact. Every citation represents confirmed engagement with the research, making it a gold standard for measuring academic influence.
 
 ## Features
 
 ### 🌍 Global Impact Visualization
 - Interactive 3D globe showing worldwide research reach
-- Real-time citation and publication tracking
+- Real-time citation tracking from CrossRef and Semantic Scholar APIs
 - Country-level engagement metrics
+- Alternative metrics via Altmetric (social media, news, policy citations)
+
+### 📊 Comprehensive Impact Tracking
+- **Citation Data**: Verifiable academic impact through CrossRef/Semantic Scholar
+- **Publication Metrics**: H-Index, journal quartiles, publication trends
+- **Collaboration Networks**: Worldwide research partnerships visualization
+- **Alternative Metrics**: Social media mentions, news coverage, policy citations
+- **AI Predictions**: Future citation trends and emerging research topics
 
 ### 📊 Role-Based Dashboards
 - **Researcher Dashboard**: Personal metrics, publications, H-Index tracking
@@ -38,6 +58,27 @@ A comprehensive research impact tracking and analytics platform for the Universi
 - **AI**: Google Gemini API
 - **Charts**: Recharts
 - **3D**: Three.js (via react-three-fiber)
+
+## Data Sources & APIs
+
+### Citation Tracking
+- **CrossRef API**: Real-time citation counts and metadata for DOI-registered publications
+- **Semantic Scholar API**: Academic citation data and paper relationships
+- **Auto-update**: Daily citation count updates via Supabase Edge Functions
+
+### Alternative Metrics
+- **Altmetric API**: Social media mentions, news coverage, policy citations, and Wikipedia references
+- **ORCID Integration**: Researcher profiles and publication verification
+
+### Why Citations Instead of Readership?
+
+Direct readership tracking requires access to publisher platforms (Nature, PLOS, Elsevier, etc.) where UDSM papers are hosted. Since these platforms don't share detailed readership data, we use:
+
+1. **Citations**: The gold standard for academic impact - every citation confirms the research was read and built upon
+2. **Altmetric Scores**: Broader attention including social media, news, and policy documents
+3. **Collaboration Networks**: Co-authorship patterns showing research influence
+
+This approach provides **verifiable, reliable evidence** of global research impact.
 
 ## Getting Started
 
