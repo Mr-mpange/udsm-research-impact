@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { BookOpen, ExternalLink, Edit2, Trash2, Save, X, Loader2, TrendingUp } from 'lucide-react';
+import { BookOpen, ExternalLink, Edit2, Trash2, Save, X, Loader2, TrendingUp, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useNavigate } from 'react-router-dom';
 import { fetchAltmetricData, type AltmetricData } from '@/services/altmetricService';
 import {
   AlertDialog,

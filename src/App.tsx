@@ -9,6 +9,7 @@ import Admin from "./pages/Admin";
 import Moderator from "./pages/Moderator";
 import Dashboard from "./pages/Dashboard";
 import ResearchNetwork from "./pages/ResearchNetwork";
+import PaperView from "./pages/PaperView";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,6 +27,7 @@ const App = () => (
             <Route path="/admin" element={<Admin />} />
             <Route path="/moderator" element={<Moderator />} />
             <Route path="/research" element={<ResearchNetwork />} />
+            <Route path="/paper/:paperId" element={<PaperView />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
